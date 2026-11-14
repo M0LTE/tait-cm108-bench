@@ -8,7 +8,7 @@ What we know so far about a pair of Tait TM8110 radios fitted with the [packetha
 
 | | |
 |---|---|
-| Radios | 2 x Tait TM8110 (TMAB12-B100), firmware QMA1F 02.19.00.03, codeplug database 0095 |
+| Radios | 2 x Tait TM8110 (TMAB12-B100): serial 19925328 on firmware QMA1F 02.19.00.03, codeplug database 0095; serial 19925369 on 02.18.00.00, database 0094 |
 | Interface | tait-cm108 board on each radio's internal options connector, USB to a Raspberry Pi |
 | Channel | 146.500 MHz, Narrow (12.5 kHz), power Very Low (1 W) |
 | RF path | radio, 6 dB (5 W) pad, 100 dB pad, 6 dB (5 W) pad, radio: 112 dB in total |
