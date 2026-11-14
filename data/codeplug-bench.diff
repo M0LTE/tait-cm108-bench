@@ -1,0 +1,64 @@
+14,15c14,15
+< txtimer=60
+< sdm=false
+---
+> txtimer=250
+> sdm=true
+17,20c17,20
+< transparent=false
+< dataport=Aux
+< ffskbaud=Baud19200
+< ffskmodembaud=Baud1200
+---
+> transparent=true
+> dataport=InternalOptions
+> ffskbaud=Baud28800
+> ffskmodembaud=Baud2400
+23c23
+< cmbaud=Baud19200
+---
+> cmbaud=Baud28800
+25c25
+< ccdisdmout=false
+---
+> ccdisdmout=true
+28,30c28,30
+< textsdmindicator=false
+< textsdmackx=false
+< textsdmackr=false
+---
+> textsdmindicator=true
+> textsdmackx=true
+> textsdmackr=true
+34c34
+< ignoresubaud=false
+---
+> ignoresubaud=true
+37c37
+< maxframelen=false
+---
+> maxframelen=true
+46c46
+< checkpacketlen=false
+---
+> checkpacketlen=true
+84,86c84,86
+< rxtap=R0
+< txtap=T0
+< tapunmute=OnPtt
+---
+> rxtap=R2
+> txtap=T12
+> tapunmute=ExceptOnPtt
+90c90
+< ptt.eptt1=Voice
+---
+> ptt.eptt1=DataFromAudioTapIn
+99c99
+< gpio.iop_gpio1=Unassigned
+---
+> gpio.iop_gpio1=ExternalPtt1Input
+107c107
+< key.f1=Unassigned
+---
+> key.f1=SquelchOverride
