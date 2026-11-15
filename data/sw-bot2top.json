@@ -1,0 +1,327 @@
+{
+ "tag": "bot2top",
+ "ref_dev_hz": 958.1590067350955,
+ "ref_rx_dbfs": -35.83352270863497,
+ "rows": [
+  {
+   "f": 30,
+   "tx_db": -0.04,
+   "rx_audio_db": -0.05,
+   "rx_path_db": -0.01,
+   "noise_dbfs_hz": -109.1,
+   "snr_100hz": 53.2
+  },
+  {
+   "f": 35,
+   "tx_db": 0.03,
+   "rx_audio_db": 0.01,
+   "rx_path_db": -0.01,
+   "noise_dbfs_hz": -109.3,
+   "snr_100hz": 53.4
+  },
+  {
+   "f": 41,
+   "tx_db": 0.07,
+   "rx_audio_db": 0.06,
+   "rx_path_db": -0.01,
+   "noise_dbfs_hz": -110.2,
+   "snr_100hz": 54.4
+  },
+  {
+   "f": 48,
+   "tx_db": 0.1,
+   "rx_audio_db": 0.1,
+   "rx_path_db": -0.0,
+   "noise_dbfs_hz": -111.4,
+   "snr_100hz": 55.7
+  },
+  {
+   "f": 55,
+   "tx_db": 0.13,
+   "rx_audio_db": 0.13,
+   "rx_path_db": -0.0,
+   "noise_dbfs_hz": -110.8,
+   "snr_100hz": 55.1
+  },
+  {
+   "f": 65,
+   "tx_db": 0.15,
+   "rx_audio_db": 0.15,
+   "rx_path_db": -0.0,
+   "noise_dbfs_hz": -110.6,
+   "snr_100hz": 54.9
+  },
+  {
+   "f": 75,
+   "tx_db": 0.17,
+   "rx_audio_db": 0.17,
+   "rx_path_db": -0.0,
+   "noise_dbfs_hz": -110.8,
+   "snr_100hz": 55.2
+  },
+  {
+   "f": 88,
+   "tx_db": 0.18,
+   "rx_audio_db": 0.19,
+   "rx_path_db": 0.0,
+   "noise_dbfs_hz": -109.8,
+   "snr_100hz": 54.1
+  },
+  {
+   "f": 103,
+   "tx_db": 0.2,
+   "rx_audio_db": 0.2,
+   "rx_path_db": 0.0,
+   "noise_dbfs_hz": -109.5,
+   "snr_100hz": 53.9
+  },
+  {
+   "f": 120,
+   "tx_db": 0.21,
+   "rx_audio_db": 0.22,
+   "rx_path_db": 0.0,
+   "noise_dbfs_hz": -108.8,
+   "snr_100hz": 53.2
+  },
+  {
+   "f": 139,
+   "tx_db": 0.23,
+   "rx_audio_db": 0.23,
+   "rx_path_db": 0.0,
+   "noise_dbfs_hz": -107.7,
+   "snr_100hz": 52.1
+  },
+  {
+   "f": 163,
+   "tx_db": 0.23,
+   "rx_audio_db": 0.24,
+   "rx_path_db": 0.0,
+   "noise_dbfs_hz": -106.5,
+   "snr_100hz": 50.9
+  },
+  {
+   "f": 190,
+   "tx_db": 0.24,
+   "rx_audio_db": 0.25,
+   "rx_path_db": 0.01,
+   "noise_dbfs_hz": -106.0,
+   "snr_100hz": 50.4
+  },
+  {
+   "f": 221,
+   "tx_db": 0.23,
+   "rx_audio_db": 0.24,
+   "rx_path_db": 0.0,
+   "noise_dbfs_hz": -103.4,
+   "snr_100hz": 47.8
+  },
+  {
+   "f": 258,
+   "tx_db": 0.23,
+   "rx_audio_db": 0.22,
+   "rx_path_db": -0.0,
+   "noise_dbfs_hz": -103.7,
+   "snr_100hz": 48.1
+  },
+  {
+   "f": 301,
+   "tx_db": 0.2,
+   "rx_audio_db": 0.2,
+   "rx_path_db": 0.0,
+   "noise_dbfs_hz": -103.0,
+   "snr_100hz": 47.4
+  },
+  {
+   "f": 350,
+   "tx_db": 0.15,
+   "rx_audio_db": 0.15,
+   "rx_path_db": 0.0,
+   "noise_dbfs_hz": -102.2,
+   "snr_100hz": 46.5
+  },
+  {
+   "f": 409,
+   "tx_db": 0.1,
+   "rx_audio_db": 0.1,
+   "rx_path_db": 0.0,
+   "noise_dbfs_hz": -102.5,
+   "snr_100hz": 46.8
+  },
+  {
+   "f": 477,
+   "tx_db": 0.06,
+   "rx_audio_db": 0.07,
+   "rx_path_db": 0.01,
+   "noise_dbfs_hz": -102.9,
+   "snr_100hz": 47.2
+  },
+  {
+   "f": 556,
+   "tx_db": 0.03,
+   "rx_audio_db": 0.04,
+   "rx_path_db": 0.0,
+   "noise_dbfs_hz": -104.4,
+   "snr_100hz": 48.6
+  },
+  {
+   "f": 648,
+   "tx_db": 0.02,
+   "rx_audio_db": 0.02,
+   "rx_path_db": 0.0,
+   "noise_dbfs_hz": -105.7,
+   "snr_100hz": 49.9
+  },
+  {
+   "f": 755,
+   "tx_db": 0.01,
+   "rx_audio_db": 0.0,
+   "rx_path_db": -0.01,
+   "noise_dbfs_hz": -106.3,
+   "snr_100hz": 50.4
+  },
+  {
+   "f": 881,
+   "tx_db": 0.0,
+   "rx_audio_db": 0.0,
+   "rx_path_db": 0.0,
+   "noise_dbfs_hz": -105.2,
+   "snr_100hz": 49.3
+  },
+  {
+   "f": 1027,
+   "tx_db": 0.01,
+   "rx_audio_db": 0.0,
+   "rx_path_db": -0.0,
+   "noise_dbfs_hz": -105.6,
+   "snr_100hz": 49.8
+  },
+  {
+   "f": 1198,
+   "tx_db": 0.04,
+   "rx_audio_db": 0.0,
+   "rx_path_db": -0.04,
+   "noise_dbfs_hz": -109.8,
+   "snr_100hz": 53.9
+  },
+  {
+   "f": 1397,
+   "tx_db": 0.02,
+   "rx_audio_db": -0.0,
+   "rx_path_db": -0.02,
+   "noise_dbfs_hz": -109.8,
+   "snr_100hz": 54.0
+  },
+  {
+   "f": 1629,
+   "tx_db": -0.0,
+   "rx_audio_db": -0.02,
+   "rx_path_db": -0.01,
+   "noise_dbfs_hz": -110.2,
+   "snr_100hz": 54.4
+  },
+  {
+   "f": 1899,
+   "tx_db": -0.01,
+   "rx_audio_db": -0.03,
+   "rx_path_db": -0.02,
+   "noise_dbfs_hz": -110.2,
+   "snr_100hz": 54.3
+  },
+  {
+   "f": 2214,
+   "tx_db": -0.02,
+   "rx_audio_db": -0.06,
+   "rx_path_db": -0.04,
+   "noise_dbfs_hz": -109.6,
+   "snr_100hz": 53.7
+  },
+  {
+   "f": 2582,
+   "tx_db": -0.06,
+   "rx_audio_db": -0.11,
+   "rx_path_db": -0.05,
+   "noise_dbfs_hz": -108.5,
+   "snr_100hz": 52.5
+  },
+  {
+   "f": 3011,
+   "tx_db": -0.09,
+   "rx_audio_db": -0.16,
+   "rx_path_db": -0.07,
+   "noise_dbfs_hz": -106.7,
+   "snr_100hz": 50.7
+  },
+  {
+   "f": 3511,
+   "tx_db": -0.14,
+   "rx_audio_db": -0.25,
+   "rx_path_db": -0.12,
+   "noise_dbfs_hz": -105.7,
+   "snr_100hz": 49.6
+  },
+  {
+   "f": 4094,
+   "tx_db": -0.17,
+   "rx_audio_db": -0.44,
+   "rx_path_db": -0.27,
+   "noise_dbfs_hz": -105.0,
+   "snr_100hz": 48.7
+  },
+  {
+   "f": 4774,
+   "tx_db": -0.22,
+   "rx_audio_db": -0.86,
+   "rx_path_db": -0.64,
+   "noise_dbfs_hz": -104.7,
+   "snr_100hz": 48.0
+  },
+  {
+   "f": 5567,
+   "tx_db": -0.32,
+   "rx_audio_db": -1.76,
+   "rx_path_db": -1.44,
+   "noise_dbfs_hz": -104.2,
+   "snr_100hz": 46.6
+  },
+  {
+   "f": 6491,
+   "tx_db": -0.47,
+   "rx_audio_db": -3.51,
+   "rx_path_db": -3.04,
+   "noise_dbfs_hz": -104.5,
+   "snr_100hz": 45.1
+  },
+  {
+   "f": 7569,
+   "tx_db": -0.65,
+   "rx_audio_db": -6.53,
+   "rx_path_db": -5.87,
+   "noise_dbfs_hz": -105.0,
+   "snr_100hz": 42.7
+  },
+  {
+   "f": 8826,
+   "tx_db": -1.04,
+   "rx_audio_db": -11.6,
+   "rx_path_db": -10.57,
+   "noise_dbfs_hz": -106.8,
+   "snr_100hz": 39.3
+  },
+  {
+   "f": 10291,
+   "tx_db": -1.49,
+   "rx_audio_db": -20.75,
+   "rx_path_db": -19.26,
+   "noise_dbfs_hz": -111.0,
+   "snr_100hz": 34.4
+  },
+  {
+   "f": 12000,
+   "tx_db": -2.4,
+   "rx_audio_db": -40.23,
+   "rx_path_db": -37.84,
+   "noise_dbfs_hz": -119.0,
+   "snr_100hz": 22.9
+  }
+ ]
+}

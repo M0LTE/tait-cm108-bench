@@ -1,8 +1,12 @@
 # Tait TM8110 + tait-cm108: bench factsheet
 
-What we know so far about a pair of Tait TM8110 radios fitted with the [packethacking/tait-cm108](https://github.com/packethacking/tait-cm108) internal options board, measured on the bench on 14 November 2026. Facts and figures only; how we got them is not recorded here.
+What we know so far about a pair of Tait TM8110 radios fitted with the [packethacking/tait-cm108](https://github.com/packethacking/tait-cm108) internal options board, measured on the bench on 14 and 15 November 2026. Facts and figures only; how we got them is not recorded here.
 
-**Headline:** the boards work as built, both ways, cleanly and linearly. With the transmit tap on T12 (which we want, so levels carry across wide and narrow channels) the board's output divider limits full-scale deviation to about 62% of the channel maximum. A one-resistor change to R11 fixes that: see [Recommended hardware change](#recommended-hardware-change).
+**Headline:**
+
+1. **Set the CM108B's "MIC PLL Adjust" EEPROM bit on every board.** As shipped, the capture clock runs about 520 ppm away from the playback clock, which breaks OFDM completely and is invisible to everything else. One EEPROM word fixes it: see [CM108B sample clock](#cm108b-sample-clock-set-mic-pll-adjust).
+2. **Change R11 from 3k3 to 2k0.** With the transmit tap on T12 (which we want, so levels carry across wide and narrow channels) the board's output divider limits full-scale deviation to about 62% of the channel maximum, and on ofdm-fm 3 dB of drive is worth a great deal. See [Hardware change: decision](#hardware-change-decision).
+3. Otherwise the boards work as built: both ways, linear, matched to within 0.4 dB, flat audio from 30 Hz to about 5 kHz.
 
 ## The bench
 
@@ -10,7 +14,7 @@ What we know so far about a pair of Tait TM8110 radios fitted with the [packetha
 |---|---|
 | Radios | 2 x Tait TM8110 (TMAB12-B100): serial 19925328 on firmware QMA1F 02.19.00.03, codeplug database 0095; serial 19925369 on 02.18.00.00, database 0094 |
 | Interface | tait-cm108 board on each radio's internal options connector, USB to a Raspberry Pi |
-| Channel | 146.500 MHz, Narrow (12.5 kHz), power Very Low (1 W) |
+| Channel | 146.500 MHz, power Very Low (1 W). Narrow (12.5 kHz) for the tone and level measurements, Wide (25 kHz) for the frequency response and ofdm-fm |
 | RF path | radio, 6 dB (5 W) pad, 100 dB pad, 6 dB (5 W) pad, radio: 112 dB in total |
 | Signal at the receiver | -80.5 dBm (radio's own RSSI), against an idle floor of about -128 dBm |
 | Deviation measured with | SDRplay RSP1 on a stubby antenna near the radios, FM-demodulated in software (about 36 dB SNR in channel) |
@@ -92,9 +96,96 @@ Receiving radio on R2, CM108 input at -12 dB (its minimum), AGC off.
 - The -36 dBc third harmonic is not in the transmitted signal (which is -47 dBc), so it arises on the receive side: the radio's R2 output, the board's input divider (R5/R10) or the CM108 input. The CM108's mic boost is off (see below), so it is not that. Not yet investigated; harmless for modems.
 - There is headroom to raise the CM108 input gain by a few dB before open-channel noise peaks approach clipping.
 
+## Audio frequency response
+
+Measured on Wide, T12 and R2, with a 40-tone sweep from 30 Hz to 12 kHz at -10 dBFS (about 1 kHz peak deviation). **Transmit** is the deviation measured off air with the RSP1, so it covers the sending CM108B, the board's output network and the radio's modulator. **Receive** is the receiving card's audio with the transmit response taken out, so it covers the receiving radio, the board's input network and the CM108B input. All figures relative to 1 kHz. Full data in [data/sw-top2bot.json](data/sw-top2bot.json) and [data/sw-bot2top.json](data/sw-bot2top.json).
+
+| Frequency | Transmit, radio 19925369 | Transmit, radio 19925328 | Receive, radio 19925328 | Receive, radio 19925369 |
+|---|---|---|---|---|
+| 30 Hz | -0.2 dB | -0.0 dB | -0.0 dB | -0.0 dB |
+| 48 Hz | -0.1 dB | +0.1 dB | -0.0 dB | -0.0 dB |
+| 103 Hz | -0.0 dB | +0.2 dB | +0.0 dB | +0.0 dB |
+| 301 Hz | +0.1 dB | +0.2 dB | +0.0 dB | +0.0 dB |
+| 1.0 kHz | 0 dB | 0 dB | 0 dB | 0 dB |
+| 2.2 kHz | -0.1 dB | -0.0 dB | +0.0 dB | -0.0 dB |
+| 3.0 kHz | -0.1 dB | -0.1 dB | +0.1 dB | -0.1 dB |
+| 4.1 kHz | -0.2 dB | -0.2 dB | -0.1 dB | -0.3 dB |
+| 4.8 kHz | -0.3 dB | -0.2 dB | -0.4 dB | -0.6 dB |
+| 5.6 kHz | -0.4 dB | -0.3 dB | -1.2 dB | -1.4 dB |
+| 6.5 kHz | -0.5 dB | -0.5 dB | -2.8 dB | -3.0 dB |
+| 7.6 kHz | -0.7 dB | -0.7 dB | -5.7 dB | -5.9 dB |
+| 8.8 kHz | -1.1 dB | -1.0 dB | -10.5 dB | -10.6 dB |
+| 10.3 kHz | -1.6 dB | -1.5 dB | -19.3 dB | -19.3 dB |
+| 12.0 kHz | -2.4 dB | -2.4 dB | -37.7 dB | -37.8 dB |
+
+- **Transmit is flat within 0.5 dB from 30 Hz to 6.5 kHz** and only 2.4 dB down at 12 kHz. No pre-emphasis (as expected for T12) and no low-frequency limit down to 30 Hz, which is good news for 9600 and C4FSK.
+- **Receive is flat within 0.1 dB from 30 Hz to 4 kHz, then rolls off: -3 dB at about 6.6 kHz, -6 dB at 7.6 kHz, -10 dB at 8.8 kHz.** The roll-off is in the radio: the board's input network and the CM108B input are flat well past 20 kHz. It costs the top carriers of `ofdm-fm-8k` (which reaches 8 kHz) about 6 dB.
+- **The two radios match within 0.3 dB** everywhere, in both directions.
+
+## Noise, spurs and signal quality across the band
+
+**Noise floor** under an unmodulated carrier (receive audio, CM108 input at -12 dB) is about -110 dBFS/Hz below 100 Hz, -105 dBFS/Hz from 100 Hz to 1 kHz, -109 dBFS/Hz from 1 to 3 kHz and -104 to -105 dBFS/Hz from 4 to 8 kHz, the same on both receivers. Against a tone at 1 kHz peak deviation that is 43 to 56 dB in a 100 Hz bandwidth across 30 Hz to 8 kHz.
+
+**Spurs:**
+
+- **Radio 19925328's receiver has a tone at about 3.89 kHz** (drifting 3882 to 3902 Hz), 26 dB above the noise around it: about -76 dBFS, the equivalent of 9 Hz of deviation. It is not on the other radio's transmission (checked with the RSP1) and not caused by the RSP1. The other receiver does not have it. Source not yet found (radio or board).
+- **Radio 19925328's transmitter carries a 100 Hz buzz** with harmonics to about 2.7 kHz: 5 to 7 Hz peak deviation per harmonic, 14 Hz rms in total. The other transmitter is clean. Source not yet found.
+- Both receivers show small tones near 1 kHz and 4 kHz, about 10 dB above the noise, probably USB frame-rate pickup on the boards. Minor.
+
+**Signal quality with an OFDM-like signal** (84 tones from 211 Hz to 8 kHz, random phases, gaps between them; tone power against what fills the gaps, at the receiving card). Both directions measured within 1 to 2 dB of each other:
+
+| Drive (rms) | 0.2 to 1 kHz | 1 to 2 kHz | 2 to 3 kHz | 4 to 5 kHz | 5 to 6 kHz | 7 to 8 kHz |
+|---|---|---|---|---|---|---|
+| -12 dBFS | 39 to 40 dB | 38 dB | 33 to 35 dB | 29 to 30 dB | 27 to 28 dB | 24 to 25 dB |
+| -18 dBFS | 34 to 35 dB | 39 dB | 37 dB | 32 to 33 dB | 31 dB | 27 to 28 dB |
+
+Quality falls steadily with frequency, by about 15 dB across the band, and improves at the top when the drive is lowered, so distortion as well as noise is setting it. This is the budget an OFDM modem has to work within on this bench.
+
+## ofdm-fm
+
+pdn-soundmodem 0.108.0, one instance per radio on the same Raspberry Pi, both radios on Wide. Carrier sense from each radio's own CCDI RSSI (busy above -110 dBm). KISS channel access set by the test harness before every run on both stations: **persistence 255, slot time 10 ms, TXDELAY 50 ms, TXTAIL 50 ms**, so no random back-off. Frames are AX.25 UI, counted byte-identical at the far KISS port.
+
+**Before MIC PLL Adjust** nothing decoded live in either direction, on any preset including `ofdm-fm-narrow`. Offline decoding of a recording got 1 frame in 3, at 11 to 15 dB SNR.
+
+**After MIC PLL Adjust:**
+
+| Preset, frame size | Bottom to top | Top to bottom |
+|---|---|---|
+| `ofdm-fm-narrow`, 256 B | 10/10, 2.0 kbit/s | 10/10, 2.0 kbit/s |
+| `ofdm-fm-8k`, 1024 B | 10/10, 16.1 kbit/s | 10/10, 16.0 kbit/s |
+| `ofdm-fm-8k-r78`, 1900 B, full drive | 57/60 | 20/60 |
+| `ofdm-fm-8k-r78`, 1900 B, drive 3 dB lower | 53/60 | 2/60 |
+
+(The r78 rows are three alternating runs of 20 frames at each drive, interleaved.)
+
+- `ofdm-fm-8k` works at the rate the earlier ofdm-fm bench reported (17.5 kbit/s at 1024 B, with about 2.4 dB more deviation than this bench has).
+- `ofdm-fm-8k-r78` is right at the edge here, which makes it a sensitive test: **3 dB less drive took one direction from 20/60 to 2/60** and the other from 57/60 to 53/60.
+- **The two directions are not equal at the margin.** Top to bottom (received by radio 19925328) is consistently weaker. Tone tests, frequency response and the multitone test above are all symmetric, so the difference is something those do not see. Candidates: the 3.89 kHz spur in that receiver (though notching it out offline made decoding worse, not better, because the notch costs more carriers than the spur does), and the receiving CM108B's clock wandering within a burst (below).
+- **Clock wander after the change:** the capture clocks lock to the USB timing on average but wander by about plus or minus 50 ppm over half-second spans, on both boards, which over a 1.5 s burst is about 1.2 to 1.4 rad of phase at 8 kHz. Straight after a board is powered up it is much worse (swings of several hundred ppm for some minutes), so let a board settle before testing.
+
+## CM108B sample clock: set MIC PLL Adjust
+
+**This is the most important finding so far, and it needs no hardware change.**
+
+As shipped, each board's CM108B plays back locked to the host's USB timing, but its capture (ADC) clock runs free. Measured against the RSP1 (whose own error is about 1 ppm, from the Tait carriers), with a 1 kHz tone through the radios:
+
+| | Playback (DAC) | Capture (ADC), as shipped | Capture (ADC), MIC PLL Adjust on |
+|---|---|---|---|
+| Board 20000002 | -135 ppm | +380 to +393 ppm | -135 to -144 ppm |
+| Board 20000005 | -135 ppm | +353 to +391 ppm | -134 to -137 ppm |
+
+The playback figure is the Raspberry Pi's USB clock. As shipped, every link between two of these boards therefore carries a fixed **mismatch of about 520 ppm** between the sending card's DAC and the receiving card's ADC. That is invisible to AFSK, tone tests and level measurements, but it is fatal to OFDM: across a 0.9 s burst it is 22 samples of drift. On this bench, ofdm-fm decoded nothing live and 1 frame in 3 offline before the change.
+
+With bit 4 of EEPROM word 0x2B ("MIC PLL Adjust") set, the capture clock locks to the USB timing too, and both directions decode every frame (see [ofdm-fm](#ofdm-fm)). On two boards on the same host the mismatch is then zero; on two different hosts it is the difference between their USB clocks, typically tens of ppm.
+
+- The change is one EEPROM word: **0x2B from 7A02 to 7A12**. Both bench boards now carry it.
+- It takes effect only after a power-cycle of the board (unplug and replug the USB). A USB reset is not enough.
+- For the first minute or so after power-up the capture clock is still settling (0.48 rad of phase wander on a 10 s tone, against about 0.1 rad once settled).
+- Recommended for every tait-cm108 board, and worth programming into the EEPROM at manufacture.
+
 ## CM108B EEPROM
 
-Both boards' EEPROMs read identically apart from the serial number ([data/eeprom-board-20000002.txt](data/eeprom-board-20000002.txt), [data/eeprom-board-20000005.txt](data/eeprom-board-20000005.txt); 64 words from address 0x00).
+Both boards' EEPROMs read identically apart from the serial number ([data/eeprom-board-20000002.txt](data/eeprom-board-20000002.txt), [data/eeprom-board-20000005.txt](data/eeprom-board-20000005.txt) are as shipped; 64 words from address 0x00). The only change made is the MIC PLL Adjust bit above.
 
 | Item | Value |
 |---|---|
@@ -102,16 +193,21 @@ Both boards' EEPROMs read identically apart from the serial number ([data/eeprom
 | Product / manufacturer / serial | "TaitCM108" / "M9TWM" / board serial |
 | Mic input high-pass filter | **off** (good for 9600 and other low-frequency modes) |
 | Mic boost | **off** (boost mode field set to 12 dB but not enabled) |
+| MIC PLL Adjust | **off as shipped; turn it on** (word 0x2B bit 4) |
 | DAC (output) volume range | -37 dB to 0 dB |
 | ADC (input) volume range | -12 dB to +23 dB |
 
-**The EEPROM cannot add transmit level.** The CM108B's output volume control is an attenuator, 0 dB at most, and full-scale output is already about 1 V rms into 10 kohm. Extra deviation has to come from the board's output divider or the tap point. Nothing in the EEPROM needs changing.
+Reading and writing the EEPROM goes over the CM108B's HID interface, the same one that carries PTT: an output report `[0x80, lo, hi, 0x80|addr]` reads a word (it comes back in input report bytes 1 and 2) and `[0x80, lo, hi, 0xC0|addr]` writes one. The scripts used are in [tools/](tools/).
+
+**The EEPROM cannot add transmit level.** The CM108B's output volume control is an attenuator, 0 dB at most, and full-scale output is already about 1 V rms into 10 kohm. Extra deviation has to come from the board's output divider or the tap point.
 
 Start-up mixer levels are best set on the host. On Linux, set output 0 dB, input as wanted, AGC off, then `sudo alsactl store` so they are restored whenever the card re-enumerates (otherwise the output came back at -20 dB).
 
-## Recommended hardware change
+## Hardware change: decision
 
-The output path is CM108B line out, C29, then a divider of R11 (series, 3k3) and R12 (shunt, 1k), then C30 into the radio's AUD_TAP_IN. That divides by 4.3. On T12 it lands full scale at about 62% of the channel maximum (1.54 kHz on Narrow, average of the two boards), and the sound card has nothing left to give.
+**Decision: change R11 from 3k3 to 2k0 on both boards.**
+
+The output path is CM108B line out, C29, then a divider of R11 (series, 3k3) and R12 (shunt, 1k), then C30 into the radio's AUD_TAP_IN. That divides by 4.3. On T12 it lands full scale at about 62% of the channel maximum (1.54 kHz on Narrow, 3.1 kHz on Wide, average of the two boards), and the sound card has nothing left to give.
 
 Changing **R11** alone moves the ceiling (figures scaled from the measurements above, T12):
 
@@ -122,14 +218,21 @@ Changing **R11** alone moves the ceiling (figures scaled from the measurements a
 | **2k0** | **/3.0** | **2.21 kHz** | **88%** | **4.41 kHz** |
 | 1k8 | /2.8 | 2.37 kHz | 95% | 4.73 kHz |
 
-**Recommendation: R11 = 2k0** (0805, 1%). It gives about 3.1 dB more deviation and leaves about 1 dB margin at full scale. That margin matters on T12, because the radio has no limiter in that path and the sound card level is the only protection against over-deviating. The two boards differ by about 0.4 dB, so 1k8 would leave too little. With 2k0 the load on the CM108B line output is 3 kohm, between the 10 kohm and 32 ohm loads it is specified for, and the coupling corners stay below 6 Hz.
+Why:
 
-The alternative without a soldering iron is T13, which reaches 97% on Narrow, but only on a single channel width: on Wide it would be 49%. If both radios stay on one channel width forever, T13 is a valid choice; T12 plus R11 = 2k0 is right for anything else.
+- **Deviation is what sets the link quality here.** The receiver is fully quieted, so post-detection SNR goes up with deviation (shown by the tone tests and the multitone test).
+- **For ofdm-fm, 3 dB of drive is decisive at the margin**: dropping the drive 3 dB on `ofdm-fm-8k-r78` took one direction from 20/60 to 2/60 frames. R11 = 2k0 adds 3.1 dB at full scale, the same step the other way.
+- **Software cannot do it**: the CM108B output is at its 0 dB maximum and the EEPROM cannot raise it.
+- **T13 is not an alternative for ofdm-fm**, which runs on Wide: T13 would give 2.44 kHz there, less than T12 does now.
+- **Why not more**: T12 has no limiter, so the audio level is the only guard against over-deviating. 2k0 keeps a sine at full scale at 88% of the class and leaves about 1 dB of margin, which covers the 0.4 dB between the two boards. OFDM's peaks are bounded by the DAC's full scale, so they also stay under 88%. 1k8 would leave too little.
+- With 2k0 the load on the CM108B line output is 3 kohm, between the 10 kohm and 32 ohm loads it is specified for, and the coupling corners stay below 6 Hz.
 
-After the change, re-measure full-scale deviation on each radio; the table above is a scaling, not a measurement.
+After the change, re-measure full-scale deviation on each radio (the table is a scaling, not a measurement), then repeat the r78 test above. The earlier ofdm-fm bench made the equivalent change (to 82% of class) and measured about 7 dB of link SNR from it, so the gain should be clear.
 
 ## Open questions
 
+- Why the 19925328 receive direction is weaker at the ofdm-fm margin.
+- Source of the 3.89 kHz spur in 19925328's receiver and the 100 Hz buzz on its transmitter (radio or board; swapping the boards between radios would tell).
 - Source of the -36 dBc third harmonic on receive.
-- Low-frequency response end to end (relevant to 9600 and C4FSK).
+- Whether the CM108B's capture clock wander after MIC PLL Adjust (about plus or minus 50 ppm) limits the denser OFDM presets.
 - Best CM108 input gain for the modems.
