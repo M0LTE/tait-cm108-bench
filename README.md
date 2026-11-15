@@ -203,6 +203,29 @@ Reading and writing the EEPROM goes over the CM108B's HID interface, the same on
 
 Start-up mixer levels are best set on the host. On Linux, set output 0 dB, input as wanted, AGC off, then `sudo alsactl store` so they are restored whenever the card re-enumerates (otherwise the output came back at -20 dB).
 
+## Two hosts
+
+From 15 November the bottom radio (19925328, board 20000005) is on its own Raspberry Pi 4 (radio2, no undervoltage reported: `vcgencmd get_throttled` 0x0), and the top radio stays on radio1. Same pdn-soundmodem 0.108.0 configuration on each.
+
+**USB clocks of the two Pis**, measured as above (playback against the RSP1, and capture through the radios), three runs each way:
+
+| | Playback (DAC) | Capture (ADC) |
+|---|---|---|
+| radio1 (board 20000002) | -135 to -138 ppm | -134 to -138 ppm |
+| radio2 (board 20000005) | -130 ppm | -130 to -131 ppm |
+
+So with MIC PLL Adjust on, each card runs on its own host's USB clock, both directions, and this pair of hosts is only **about 5 ppm apart**. That is luck: it says nothing about other pairs of computers.
+
+**ofdm-fm across the two hosts** (`ofdm-fm-8k`, 1024 B frames, 10 per run): bottom to top 4, 8 and 8 of 10; top to bottom 9, 9 and 9 of 10. Slightly below the single-host 10/10.
+
+**Tolerance to clock mismatch, measured offline:** 20 real `ofdm-fm-8k` bursts (1024 B) recorded from radio2 at radio1's card, resampled by a chosen offset with sox (`speed`), and decoded with `pdn-soundmodem --wav`. The unaltered recording was already marginal (7/20), which makes it a sensitive test:
+
+| Offset | -300 | -200 | -100 | -50 | -25 | 0 | +25 | +50 | +100 | +200 | +300 ppm |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Frames decoded of 20 | 2 | 3 | 6 | 10 | 9 | 7 | 8 | 9 | 9 | 6 | 2 |
+
+Within about plus or minus 100 ppm the count stays within the run-to-run spread; beyond that it falls, and at 300 ppm almost nothing decodes. Two hosts 100 to 200 ppm apart are ordinary, so station-side rate correction (pdn-soundmodem #809) is worth having.
+
 ## Hardware change: decision
 
 **Decision: change R11 from 3k3 to 2k0 on both boards.**
