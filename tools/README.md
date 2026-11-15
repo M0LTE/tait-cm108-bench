@@ -60,4 +60,4 @@ ssh pi@radio1 'cd tait-pair && python3 iqan.py burst burst.cf32'          # what
 - `frames` restores the drive to 0 dB when it finishes; if you interrupt it, run `drive top 0; drive bot 0`.
 - `kisstest.py` sets KISS persistence 255, slot 10 ms, TXDELAY 50 ms and TXTAIL 50 ms on both ports before every run.
 - Radio1 cannot ssh to radio2, but it can reach radio2's KISS port, which is why `kisstest.py` runs there.
-- The RSP1 is uncalibrated: it reads both carriers about 180 Hz high. Its gain is `GAIN=IFGR=30,RFGR=0` by default; check the capture's peak is under 1.0 if you raise it.
+- The RSP1 is uncalibrated: it reads both carriers about 180 Hz high. It sits on a tee in the attenuator chain behind a 20 dB pad; `GAIN=IFGR=36,RFGR=0` (the default) gives 48 dB signal to noise with the peak near 0.4 of full scale.

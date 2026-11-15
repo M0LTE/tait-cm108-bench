@@ -24,6 +24,27 @@ Each board appears on USB as a hub with three devices: a CM108B sound card ("Tai
 
 **Device names.** Linux numbers sound cards and hidraw nodes in the order they appear, so a board that re-enumerates can come back under another name (it happened: see [USB drop-out](#usb-drop-out)). Both Pis now carry [tools/99-tait-cm108.rules](tools/99-tait-cm108.rules), which names each board by its serial number: ALSA card `Tait20000002` and PTT `/dev/tait-ptt-20000002`, and likewise for 20000005. The modem configurations use those names.
 
+### RSP1 on a tee (from 13:40 UTC on 15 November)
+
+The RSP1 moved from its stubby antenna to a tee at the midpoint of the attenuator chain, behind a 20 dB pad of its own. Changed nothing else, then re-measured:
+
+| | Off the stubby | On the tee |
+|---|---|---|
+| Signal at each receiver (radio's RSSI) | -80.5 dBm | **-83.7 and -84.0 dBm** |
+| RSP1 signal to noise in the channel | 28 to 36 dB | **48 dB** (gain `IFGR=36,RFGR=0`) |
+| Residual on a measured tone | 130 to 160 Hz rms | 17 to 60 Hz rms |
+| Full-scale deviation, top / bottom radio | 3.083 / 3.034 kHz | 3.085 / 3.033 kHz |
+| Transmit second plus third harmonic at full scale | -48 dBc (noise-limited) | -54 dBc |
+| Level of the two radios at the RSP1 | | equal within 0.6 dB |
+| Received audio level, full-scale tone | -25.9 dBFS rms | -25.9 dBFS rms |
+| Receive noise under a carrier, 300 Hz to 1 kHz | -105 dBFS/Hz | -105 dBFS/Hz |
+| Receive noise under a carrier, 1 to 8 kHz | -105 to -110 dBFS/Hz | **2 to 3 dB higher** |
+| `ofdm-fm-8k` burst | 0.70 kHz rms, 2.9 kHz peak | 0.69 kHz rms, **2.65 kHz peak** |
+| `ofdm-fm-8k-r78`, 1900 B, drive 0 dB | 72/80 and 29/80 | **19/80 and 4/80** |
+
+- **As a measuring point it is much better**, and it agrees with the stubby on everything the stubby could measure. The burst peak is lower because the old figure had the stubby's noise riding on it; 2.65 kHz (53% of the 5 kHz maximum, crest 11.7 dB) is the better number.
+- **The tee takes 3.5 dB out of the main path, and that is not free.** Audio noise above 1 kHz rose 2 to 3 dB and the rate 7/8 preset lost most of its frames. So at -80 dBm the receivers are **not** fully quieted above 1 kHz: the upper carriers' noise still follows the RF level. Figures taken before and after the tee are not comparable for the modems until about 3.5 dB of attenuation is taken out elsewhere.
+
 ## Codeplug
 
 Start from the radio's default codeplug and apply the `pdn-internal` profile from [tait-codeplug](https://github.com/M0LTE/tait-codeplug), then set the transmit tap to T12. Channels, frequencies and power are left alone. The full field list is in [data/codeplug-bench.txt](data/codeplug-bench.txt) and the change from default in [data/codeplug-bench.diff](data/codeplug-bench.diff).
@@ -97,7 +118,7 @@ The sideband method gives 3.09 and 3.04 kHz at 0 dBFS.
 - **Against Tait's figures:** the board puts about 0.66 V peak to peak on the tap at full scale (1 V rms through the 4.3 divider), so T12 on Wide measures 0.21 V p-p per kHz against Tait's published 0.23, and T13 0.27 against 0.29. Both are 0.6 dB more sensitive than the book.
 - Carriers were within 10 Hz of each other, 2 Hz on 15 November (absolute frequency not measured; the RSP1 was not calibrated).
 
-**What a real ofdm-fm burst deviates to** (15 November, Wide, `ofdm-fm-8k`, modem drive at its default, measured off air in both directions): **0.70 kHz rms, peaks of 2.9 kHz (58% of the 5 kHz maximum), crest factor 12.3 dB.** The modem already uses the whole of the sound card's range on peaks (2.9 of the 3.06 kHz a full-scale sample gives), and its average sits 12.8 dB below a full-scale sine. Keep this in mind wherever a sine figure is quoted: the sine is the ceiling, the burst is what the link runs on.
+**What a real ofdm-fm burst deviates to** (15 November, Wide, `ofdm-fm-8k`, modem drive at its default, measured off air in both directions): **0.69 kHz rms, peaks of 2.65 kHz (53% of the 5 kHz maximum), crest factor 11.7 dB** (the cleaner measurement on the tee; off the stubby the peak read 2.9 kHz with noise on it). The modem's peaks reach 87% of what a full-scale sample gives (3.06 kHz), and its average sits 12.9 dB below a full-scale sine. Keep this in mind wherever a sine figure is quoted: the sine is the ceiling, the burst is what the link runs on.
 
 ## Receive
 
@@ -125,7 +146,7 @@ SINAD (300 Hz to 3 kHz) against deviation, 1 kHz tone:
 On Narrow it rose all the way up the ladder, from 22 dB at 0.16 kHz to 38 dB at 1.54 kHz.
 
 - **R2 normalises to the channel.** The received level follows the share of the channel's maximum deviation, not the kHz: the same sound card level gives the same received level on Narrow and Wide, and 1 kHz of deviation reads 6 dB lower on Wide than on Narrow.
-- **The receiver is fully quieted at -80 dBm, so noise in the audio does not depend on signal strength here.** Up to about 1.5 kHz of deviation, more deviation means better SINAD, dB for dB.
+- **Up to about 1.5 kHz of deviation, more deviation means better SINAD, dB for dB.** At -80 dBm the receiver is quieted enough that the 300 Hz to 3 kHz SINAD barely moves with signal level, but not fully: 3.5 dB less signal raised the noise above 1 kHz by 2 to 3 dB (see [RSP1 on a tee](#rsp1-on-a-tee-from-1340-utc-on-15-november)).
 - **Above about 1.5 kHz of deviation, receive-side distortion takes over.** On Wide the SINAD peaks at 40 dB and then falls, as the third harmonic rises from below -45 dBc to -34 dBc at 3 kHz. The harmonic is not in the transmitted signal (which is -48 dBc), so it arises in the receiver. The September ofdm-fm bench (TM8110s through a different CM108 interface) saw the same and put it down to the IF filter clipping the edges of a widely deviated signal. So on a strong signal like this bench's, extra deviation beyond about 1.5 kHz does not make the audio cleaner. On a weak signal, where noise is the limit, it still would.
 - **Leave the CM108 input gain at -12 dB.** A full-scale tone from the far end arrives at only -25.9 dBFS rms, but that costs nothing: with the input gain 10 dB higher, signal, noise floor and SINAD all moved by exactly 10 dB, so the sound card's own noise is nowhere near the radio's. At +10 dB the open-channel noise peaks reach -1.4 dBFS, so there is nothing to gain and clipping to lose.
 
@@ -326,17 +347,17 @@ Changing **R11** alone moves the ceiling (figures scaled from the measurements a
 
 | R11 | Divider | Full scale, Narrow | Share of maximum | Full scale, Wide | `ofdm-fm-8k` burst on Wide, rms / peak |
 |---|---|---|---|---|---|
-| 3k3 (fitted) | /4.3 | 1.54 kHz | 62% | 3.06 kHz | 0.70 / 2.9 kHz (measured) |
-| 2k2 | /3.2 | 2.07 kHz | 83% | 4.11 kHz | 0.94 / 3.9 kHz |
-| **2k0** | **/3.0** | **2.21 kHz** | **88%** | **4.39 kHz** | **1.00 / 4.2 kHz** |
-| 1k8 | /2.8 | 2.37 kHz | 95% | 4.70 kHz | 1.08 / 4.5 kHz |
+| 3k3 (fitted) | /4.3 | 1.54 kHz | 62% | 3.06 kHz | 0.69 / 2.65 kHz (measured) |
+| 2k2 | /3.2 | 2.07 kHz | 83% | 4.11 kHz | 0.93 / 3.6 kHz |
+| **2k0** | **/3.0** | **2.21 kHz** | **88%** | **4.39 kHz** | **0.99 / 3.8 kHz** |
+| 1k8 | /2.8 | 2.37 kHz | 95% | 4.70 kHz | 1.06 / 4.1 kHz |
 
 Why:
 
 - **For the densest ofdm-fm preset, 3 dB of drive is decisive at the margin**, measured twice, on one Pi and on two: dropping the drive 3 dB on `ofdm-fm-8k-r78` took the weak direction from 20/60 to 2/60 frames and then from 29/80 to 1/80. R11 = 2k0 adds 3.1 dB at full scale, the same step the other way.
-- **Software cannot do it**: the CM108B output is at its 0 dB maximum, the EEPROM cannot raise it, and the modem's bursts already peak at 95% of the sound card's range.
+- **Software cannot do it**: the CM108B output is at its 0 dB maximum, the EEPROM cannot raise it, and the modem's bursts already peak at 87% of the sound card's range.
 - **T13 is not an alternative for ofdm-fm**, which runs on Wide: T13 would give 2.44 kHz there, less than T12 does now.
-- **On a weak signal every mode gains.** This bench sits at -80 dBm, fully quieted. On a real path near the noise, recovered audio signal-to-noise goes up dB for dB with deviation, and 62% of the channel is 4 dB given away.
+- **On a weak signal every mode gains.** Even at -80 dBm the upper audio band's noise follows the RF level. On a real path nearer the noise, recovered audio signal-to-noise goes up dB for dB with deviation, and 62% of the channel is 4 dB given away.
 - **Why not more**: T12 has no limiter, so the audio level is the only guard against over-deviating. 2k0 keeps a sine at full scale at 88% of the class and leaves about 1 dB of margin, which covers the 0.4 dB between the two boards. OFDM's peaks are bounded by the DAC's full scale, so they also stay under 88%. 1k8 would leave too little.
 - With 2k0 the load on the CM108B line output is 3 kohm, between the 10 kohm and 32 ohm loads it is specified for, and the coupling corners stay below 6 Hz.
 
@@ -350,12 +371,12 @@ After the change, re-measure with the scripts in [tools/](tools/): the deviation
 
 ## Baseline for ofdm-fm work
 
-What the next round of ofdm-fm development starts from, pdn-soundmodem 0.108.0, two Pis, Wide, R11 still 3k3:
+What the next round of ofdm-fm development starts from, pdn-soundmodem 0.108.0, two Pis, Wide, R11 still 3k3, receivers at -80.5 dBm (before the RSP1 tee took 3.5 dB out; with the tee in, r78 fell to 19/80 and 4/80):
 
 | | |
 |---|---|
 | Full-scale sine | 3.06 kHz peak (61% of 5 kHz) |
-| `ofdm-fm-8k` burst | 0.70 kHz rms, 2.9 kHz peak, crest 12.3 dB |
+| `ofdm-fm-8k` burst | 0.69 kHz rms, 2.65 kHz peak, crest 11.7 dB |
 | Receive response | flat to 4 kHz, -3 dB at 6.6 kHz, -6 dB at 7.6 kHz |
 | Signal quality across the band (multitone at the burst's level) | 39 dB below 2 kHz falling to 25 dB at 8 kHz, as an upper bound |
 | Clock mismatch between stations | 3 to 15 ppm average; wander of 27 to 52 microseconds within 1.5 s |

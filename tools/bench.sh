@@ -1,7 +1,7 @@
 # Source this on a machine that can ssh to both Pis. Top radio (19925369) is on radio1 with the RSP1; bottom (19925328) on radio2.
 R1=pi@radio1; R2=pi@radio2; D=tait-pair
 top=("$R1" /dev/tait-ptt-20000002 Tait20000002 tait-top); bot=("$R2" /dev/tait-ptt-20000005 Tait20000005 tait-bottom)
-GAIN=${GAIN:-IFGR=30,RFGR=0}
+GAIN=${GAIN:-IFGR=36,RFGR=0}
 modems() { ssh $R1 "sudo systemctl $1 pdn-soundmodem@tait-top"; ssh $R2 "sudo systemctl $1 pdn-soundmodem@tait-bottom"; }
 # sdr TAG SECONDS : RSP1 capture to ~/tait-pair/TAG.cf32 on radio1 (returns when it ends)
 sdr() { ssh $R1 "cd $D && rm -f $1.cf32 && rx_sdr -d driver=sdrplay -f 146440000 -s 192000 -g $GAIN -F CF32 -n $((192000*$2)) $1.cf32 >/dev/null 2>&1"; }
