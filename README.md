@@ -128,8 +128,8 @@ Measured on Wide, T12 and R2, with a 40-tone sweep from 30 Hz to 12 kHz at -10 d
 
 **Spurs:**
 
-- **Radio 19925328's receiver has a tone at about 3.89 kHz** (drifting 3882 to 3902 Hz), 26 dB above the noise around it: about -76 dBFS, the equivalent of 9 Hz of deviation. It is not on the other radio's transmission (checked with the RSP1) and not caused by the RSP1. The other receiver does not have it. Source not yet found (radio or board).
-- **Radio 19925328's transmitter carries a 100 Hz buzz** with harmonics to about 2.7 kHz: 5 to 7 Hz peak deviation per harmonic, 14 Hz rms in total. The other transmitter is clean. Source not yet found.
+- **Radio 19925328's receiver has a tone at about 3.89 kHz** (drifting 3882 to 3902 Hz), 26 dB above the noise around it: about -76 dBFS, the equivalent of 9 Hz of deviation. It is not on the other radio's transmission (checked with the RSP1) and not caused by the RSP1. The other receiver does not have it. Source not yet found (radio or board). It is not the programming lead that was in that radio's mic socket: unplugging it changed nothing.
+- **Radio 19925328's transmitter carries a 100 Hz buzz** with harmonics to about 2.7 kHz: 5 to 7 Hz peak deviation per harmonic, 14 Hz rms in total. The other transmitter is clean. Source not yet found; not the mic-socket programming lead (11.8 Hz rms with it unplugged).
 - Both receivers show small tones near 1 kHz and 4 kHz, about 10 dB above the noise, probably USB frame-rate pickup on the boards. Minor.
 
 **Signal quality with an OFDM-like signal** (84 tones from 211 Hz to 8 kHz, random phases, gaps between them; tone power against what fills the gaps, at the receiving card). Both directions measured within 1 to 2 dB of each other:
@@ -234,5 +234,6 @@ After the change, re-measure full-scale deviation on each radio (the table is a 
 - Why the 19925328 receive direction is weaker at the ofdm-fm margin.
 - Source of the 3.89 kHz spur in 19925328's receiver and the 100 Hz buzz on its transmitter (radio or board; swapping the boards between radios would tell).
 - Source of the -36 dBc third harmonic on receive.
+- **Sample-clock offset between stations on different computers.** MIC PLL Adjust locks each card to its own host's USB clock, so the mismatch between two stations becomes the difference between their hosts' clocks. This Pi's is -135 ppm; two hosts 100 to 200 ppm apart are ordinary. pdn-soundmodem's ofdm-fm already corrects a sample-clock tilt per burst, but its own notes record dense constellations struggling at 100 ppm and failing at 200 ppm. The single-carrier modems track clock error to 500 ppm or more. Not yet tested with two hosts.
 - Whether the CM108B's capture clock wander after MIC PLL Adjust (about plus or minus 50 ppm) limits the denser OFDM presets.
 - Best CM108 input gain for the modems.
