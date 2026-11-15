@@ -1,0 +1,6 @@
+# Stable names for tait-cm108 boards, whatever order they enumerate in:
+#   ALSA card  Tait<serial>            e.g. plughw:CARD=Tait20000002,DEV=0
+#   PTT        /dev/tait-ptt-<serial>  (the CM108B's hidraw node)
+# Install: sudo cp 99-tait-cm108.rules /etc/udev/rules.d/ && sudo udevadm control --reload && sudo udevadm trigger -c add -s sound -s hidraw
+SUBSYSTEM=="sound", KERNEL=="card*", ATTRS{idVendor}=="0d8c", ATTRS{idProduct}=="0012", ATTRS{product}=="TaitCM108", ATTR{id}="Tait$attr{serial}"
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0d8c", ATTRS{idProduct}=="0012", ATTRS{product}=="TaitCM108", SYMLINK+="tait-ptt-$attr{serial}", GROUP="audio", MODE="0660"
