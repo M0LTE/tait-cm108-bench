@@ -383,6 +383,19 @@ After the change, re-measure with the scripts in [tools/](tools/): the deviation
 
 First ofdm-fm after the change, two hosts, `ofdm-fm-8k` 1024 B, two interleaved rounds of 20 frames each way: **73 of 80 at full drive, 73 of 80 at -3 dB** (the old full-scale deviation). As expected for that preset, which has margin either way. The r78 and burst-deviation rounds described above are still to do.
 
+**Re-test, 2026-11-17, with a replacement radio.** Radio 19925328 (the one with the receive spur) was replaced by **19924394** (TM8110, firmware 2.18, database 0094) on board 20000002 and radio2. It arrived on 145.400 MHz at High power; it was programmed to the bench codeplug (146.500 MHz, Wide, Very Low, `pdn-internal`, T12) before it was ever keyed, and the codeplug read back identical to the other radio's field for field. Its full-scale deviation is 4.46 kHz (89%), linear within 0.01 dB, and its receiver shows no spurs.
+
+The radio-to-radio path had lost about 14 dB (far end -96 dBm against the -82 dBm the 112 dB of pads should give). Removing the tee and a barrel, and DC checks of the pads, did not find it. Taking the 30 dB pad out of the chain brought the far end to -50.6 dBm (expected -52), which looked like a bad pad, but **putting the same pad back in a different position restored -80 dBm**: the fault was a joint at the pad's old position (an SMA pair that passed DC but not RF), cured by remaking it. The RSP1 cannot verify a pad chain on this bench: with the chain attached it picks the transmitter up by another route at about -35 dBFS (60 dBm below the transmitter), so readings stop falling below that; only its first step, at -46 dBm, was trustworthy (checked linear by changing its IF and LNA gain).
+
+Then, path at -80 dBm, two hosts, interleaved rounds of 20 frames each way:
+
+| Preset, frame | Full drive (4.4 to 4.5 kHz at full scale) | -3 dB (the old full scale) |
+|---|---|---|
+| `ofdm-fm-8k`, 1024 B | 77/80 | 80/80 |
+| `ofdm-fm-8k-r78`, 1900 B | **66/80** (38/40 radio2 to radio1, 28/40 the other way) | **34/80** (32/40 and 2/40) |
+
+**The extra 3 dB of deviation doubled what the margin preset delivers** (66 against 34 of 80 frames, same session, same radios, interleaved), and r78 now runs at 23 to 24 kbit/s when it gets through. `ofdm-fm-8k` has margin either way. One direction is still weaker at the margin (radio1's radio to the new radio), and varies a lot between rounds (8/20 then 20/20 at full drive).
+
 ## Baseline for ofdm-fm work
 
 What the next round of ofdm-fm development starts from, pdn-soundmodem 0.108.0, two Pis, Wide, R11 still 3k3, receivers at -80.5 dBm (before the RSP1 tee took 3.5 dB out; with the tee in, r78 fell to 19/80 and 4/80):
