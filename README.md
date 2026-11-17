@@ -195,7 +195,7 @@ A tone at the same share of the channel's maximum deviation arrives at the same 
 | SINAD at 60% (the standard figure) | about 37.5 dB | **35.6 dB** |
 | SINAD at 89% (sound card full scale) | not measured | 30.8 dB |
 | Distortion of the 1 kHz tone at 60% | about -36 dBc | -35.5 dBc |
-| FM hum and noise (60% tone against unmodulated carrier) | about 45 dB (from the noise floor above) | **39.4 dB** |
+| FM hum and noise (60% tone against unmodulated carrier) | about 44 dB (estimated from the noise floor, not measured directly) | **39.4 dB** |
 
 - **SINAD rises with deviation only up to about 35 to 45% of the maximum.** Beyond that the receiver's own distortion dominates, so on a strong signal the channel is distortion-limited, not noise-limited. On a weak signal the peak moves to higher deviation.
 - **Narrow is about 2.5 to 6 dB behind Wide** on these measures, as expected for half the deviation.
