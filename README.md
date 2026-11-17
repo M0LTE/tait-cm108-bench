@@ -9,6 +9,30 @@ What a bench of two Tait TM8110 radios with the [packethacking/tait-cm108](https
 3. **Use R2 and T12.** Both are levelled by the radio to the channel width, so one set of levels serves Narrow and Wide.
 4. Otherwise the board works as built: linear, two boards matched within 0.4 dB, audio flat from 30 Hz to about 5 kHz.
 
+## Verdict
+
+**With two fixes (the MIC PLL Adjust EEPROM bit and R11 = 2k0), the tait-cm108 board makes the TM8110 an excellent radio for conventional packet, up to and including C4FSK speeds. For ofdm-fm it is good on Wide; the remaining limits are the radio's receiver and the CM108B's clock, and the next gains are in software rather than hardware.**
+
+What is good:
+
+- **The audio path is about as clean as an FM radio gets.** Flat from about 8 Hz to 5 kHz on Wide (3 kHz on Narrow), near-linear phase, no pre-emphasis or de-emphasis in the way, so 9600 and C4FSK get almost DC-coupled audio. Most sound card interfaces cannot offer that.
+- **Turnaround is fast and predictable.** Modulation is steady 2 ms after the carrier, the receiver opens and closes within 3 ms, and there is no squelch tail, so TXDELAY can be short.
+- **Linear and consistent.** Deviation tracks level within hundredths of a dB, two boards match within 0.4 dB, and repeated measurements agree within a few hundredths of a dB.
+- **Well integrated.** One USB lead carries audio, PTT and the radio's CCDI control port, so a modem gets real RSSI and carrier sense from the radio instead of guessing from audio.
+- **Clean transmit**: -56 dBc distortion at full scale.
+
+What needed fixing (both are cheap):
+
+- **Capture clock**: as shipped it runs 520 ppm away from playback, which silently stops OFDM working. One EEPROM bit fixes it, and boards should ship with it set.
+- **Output level**: 62% of the maximum deviation on T12 as built. R11 = 2k0 brings it to 88 to 90%, which doubled delivery on the hardest ofdm-fm preset.
+
+What limits it:
+
+- **The CM108B has no crystal.** Even with the fix its capture clock wanders slightly within a burst, and between different computers the sample-rate mismatch depends on their USB clocks. Every single-carrier mode copes; OFDM would benefit from the modem correcting rate offset ([pdn-soundmodem #809](https://github.com/packet-net/pdn-soundmodem/issues/809)). A crystal-referenced codec would avoid the issue altogether.
+- **The radio's receiver distortion.** SINAD tops out at about 37 to 40 dB, and above 30 to 40% of the maximum deviation the receiver's own distortion is the limit. That is typical of a good analogue FM radio and far more than AFSK, 9600 or C4FSK need, but it is the ceiling for dense OFDM.
+- **Narrow channels.** About 4 kHz of usable audio on Narrow rules out the wide OFDM presets on 12.5 kHz channels. That is the radio's IF filter, not the interface.
+- **Minor**: the board's second serial port ("TaitProgramming") does nothing, programming still needs a lead in the mic socket, and on the bench one board's sound card dropped off USB once in about 14 hours of use.
+
 ## Test setup
 
 | | |
