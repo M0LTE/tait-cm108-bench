@@ -182,7 +182,7 @@ Measured on Wide, T12 and R2, with a 40-tone sweep from 30 Hz to 12 kHz at -10 d
 
 **Spurs:**
 
-- **Radio 19925328's receiver has a tone at about 3.89 kHz** (drifting 3882 to 3902 Hz), 26 dB above the noise around it: about -76 dBFS, the equivalent of 9 Hz of deviation. It is not on the other radio's transmission (checked with the RSP1) and not caused by the RSP1. The other receiver does not have it. Source not yet found (radio or board). It is not the programming lead that was in that radio's mic socket, nor the power supply: it is unchanged with the lead unplugged and with the radios on battery (-78 dBFS/Hz at its peak either way).
+- **Radio 19925328's receiver has a tone at about 3.89 kHz** (drifting 3882 to 3902 Hz), 26 dB above the noise around it: about -76 dBFS, the equivalent of 9 Hz of deviation. It is not on the other radio's transmission (checked with the RSP1) and not caused by the RSP1. The other receiver does not have it. **It belongs to the radio, not the board**: after the boards swapped radios in the R11 rework it stayed with radio 19925328 (at 4.05 kHz, 23 dB above the noise, 2026-11-17), and radio 19925369 showed none with the board that had been in the spurred radio. It is not the programming lead that was in that radio's mic socket, nor the power supply: it is unchanged with the lead unplugged and with the radios on battery (-78 dBFS/Hz at its peak either way).
 - **Radio 19925328's transmitter carried a 100 Hz buzz on mains power** with harmonics to about 2.7 kHz: 5 to 7 Hz peak deviation per harmonic, 14 Hz rms in total (11.8 Hz rms with the mic-socket programming lead unplugged). **On battery it falls to 6 Hz rms**, about the measurement floor and level with the other radio (4.4 Hz rms), so it came from the mains supply. Residual FM between 300 Hz and 3 kHz also fell on battery: 23 to 17 Hz rms on that radio, 18 to 12 Hz rms on the other.
 - Both receivers show small tones near 1 kHz and 4 kHz, about 10 dB above the noise, probably USB frame-rate pickup on the boards. Minor.
 
@@ -369,6 +369,20 @@ What the evidence does not promise:
 
 After the change, re-measure with the scripts in [tools/](tools/): the deviation ladder on each radio (the table is a scaling, not a measurement), the burst deviation, then `ofdm-fm-8k-r78` at drive 0, -3 and -6 dB and `ofdm-fm-8k` at 0 and -6 dB, in interleaved rounds. If the scaling holds, r78 at -3 dB after the change should match r78 at 0 dB before it.
 
+**Done 2026-11-17: R11 is 2k0 on both boards.** Measured on Wide, T12, 1 kHz, deviation with the RSP1. The boards swapped radios in the rework, so these are board 20000005 in radio 19925369 (on radio1) and board 20000002 in radio 19925328 (on radio2):
+
+| Sound card level | Radio 19925369 + board 20000005 | Radio 19925328 + board 20000002 |
+|---|---|---|
+| -20 dBFS | 0.45 kHz | 0.44 kHz |
+| -10 dBFS | 1.42 kHz | 1.39 kHz |
+| -6 dBFS | 2.26 kHz | 2.20 kHz |
+| -3 dBFS | 3.19 kHz | 3.11 kHz |
+| 0 dBFS | **4.50 kHz (90%)** | **4.39 kHz (88%)** |
+
++3.2 dB on both against 3.13 kHz (63%) before, within 2% of the predicted 4.41 kHz. Still linear (every step within 0.01 dB of what was sent) and clean (second plus third harmonic -56 dBc at full scale). Both EEPROMs kept MIC PLL Adjust (0x2B = 7A12).
+
+First ofdm-fm after the change, two hosts, `ofdm-fm-8k` 1024 B, two interleaved rounds of 20 frames each way: **73 of 80 at full drive, 73 of 80 at -3 dB** (the old full-scale deviation). As expected for that preset, which has margin either way. The r78 and burst-deviation rounds described above are still to do.
+
 ## Baseline for ofdm-fm work
 
 What the next round of ofdm-fm development starts from, pdn-soundmodem 0.108.0, two Pis, Wide, R11 still 3k3, receivers at -80.5 dBm (before the RSP1 tee took 3.5 dB out; with the tee in, r78 fell to 19/80 and 4/80):
@@ -392,7 +406,7 @@ Rules for comparing anything against it: interleave, at least four rounds of 20 
 - Why the top to bottom direction (19925369 transmitting, 19925328 receiving) is weaker at the ofdm-fm margin. It follows the radios, not the Pi.
 - **Whether clock wander limits the dense presets**, and whether a free-running capture clock with software resampling would do better than MIC PLL Adjust.
 - Why lower drive gives a cleaner multitone above 1 kHz but worse `ofdm-fm-8k-r78` delivery.
-- Source of the 3.89 kHz spur in 19925328's receiver (radio or board; swapping the boards between radios would tell).
+- Source of the spur inside radio 19925328's receiver (about 3.9 to 4.05 kHz, drifting).
 - **Sample-clock offset between stations on other computers.** This pair of Pis happens to be within 15 ppm; 100 to 200 ppm is ordinary, and the offline sweep above says `ofdm-fm-8k` falls away beyond 100 ppm. The single-carrier modems track clock error to 500 ppm or more.
 - Why board 20000002's CM108B dropped off USB once.
 - T13 on Wide has not been measured (2.44 kHz is the expectation).
