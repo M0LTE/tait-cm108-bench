@@ -107,6 +107,8 @@ Sound card to sound card through both radios and the RF path: the sending CM108B
 
 **Amplitude**, relative to 1 kHz, mean of all six sweeps per width:
 
+<picture><source media="(prefers-color-scheme: dark)" srcset="img/response-dark.png"><img alt="End-to-end amplitude response, Wide and Narrow" src="img/response-light.png" width="750"></picture>
+
 | Frequency | Wide | Narrow |
 |---|---|---|
 | 10 Hz | -2.7 dB | -2.7 dB |
@@ -146,6 +148,8 @@ Sound card to sound card through both radios and the RF path: the sending CM108B
 
 **Phase.** Group delay, relative to its average from 211 Hz to 3 kHz, from the multitone:
 
+<picture><source media="(prefers-color-scheme: dark)" srcset="img/group-delay-dark.png"><img alt="Group delay, Wide and Narrow" src="img/group-delay-light.png" width="750"></picture>
+
 | Band | Wide | Narrow |
 |---|---|---|
 | 50 to 211 Hz | +125 to +145 microseconds (median), rising to about +750 at 23 Hz | the same |
@@ -158,6 +162,8 @@ The channel is close to linear-phase across its passband on both widths: no meas
 
 **Distortion** (second and third harmonics of each sweep tone, at 28% of maximum deviation):
 
+<picture><source media="(prefers-color-scheme: dark)" srcset="img/distortion-dark.png"><img alt="Second plus third harmonic distortion against modulating frequency" src="img/distortion-light.png" width="750"></picture>
+
 | Tone | Wide H2 / H3 | Narrow H2 / H3 |
 |---|---|---|
 | 100 Hz to 1 kHz | -53 to -56 / -56 dBc | -56 / -58 dBc |
@@ -169,6 +175,8 @@ Distortion rises with modulating frequency on both widths, by about 6 dB per oct
 
 **Noise under an unmodulated carrier** at -80 dBm, receive audio with the CM108B input at -12 dB:
 
+<picture><source media="(prefers-color-scheme: dark)" srcset="img/noise-dark.png"><img alt="Receive noise under an unmodulated carrier" src="img/noise-light.png" width="750"></picture>
+
 | Band | Wide | Narrow |
 |---|---|---|
 | 100 Hz to 1 kHz | -105 dBFS/Hz | -99 dBFS/Hz |
@@ -176,6 +184,23 @@ Distortion rises with modulating frequency on both widths, by about 6 dB per oct
 | 3 to 4 kHz | -101 to -106 dBFS/Hz | -97 to -102 dBFS/Hz |
 
 A tone at the same share of the channel's maximum deviation arrives at the same level on both widths (-32.5 dBFS rms for this sweep), so Narrow has about 5 to 6 dB less signal to noise than Wide at the same RF level, as expected for half the deviation.
+
+**SINAD and FM hum and noise.** SINAD here is a 1 kHz tone's power against everything else between 300 Hz and 3 kHz (unweighted, no de-emphasis, since R2 has none), at -80 dBm. The standard single figure is taken at 60% of the channel's maximum deviation (3 kHz on Wide, 1.5 kHz on Narrow). FM hum and noise is that 60% tone against the residual with the carrier unmodulated, in the same band.
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="img/sinad-dark.png"><img alt="SINAD against deviation, Wide and Narrow" src="img/sinad-light.png" width="750"></picture>
+
+| | Wide | Narrow |
+|---|---|---|
+| Peak SINAD | 40 dB, at about 30 to 40% of maximum | 37.3 dB, at about 40% |
+| SINAD at 60% (the standard figure) | about 37.5 dB | **35.6 dB** |
+| SINAD at 89% (sound card full scale) | not measured | 30.8 dB |
+| Distortion of the 1 kHz tone at 60% | about -36 dBc | -35.5 dBc |
+| FM hum and noise (60% tone against unmodulated carrier) | about 45 dB (from the noise floor above) | **39.4 dB** |
+
+- **SINAD rises with deviation only up to about 35 to 45% of the maximum.** Beyond that the receiver's own distortion dominates, so on a strong signal the channel is distortion-limited, not noise-limited. On a weak signal the peak moves to higher deviation.
+- **Narrow is about 2.5 to 6 dB behind Wide** on these measures, as expected for half the deviation.
+- Wide was measured on 15 November with the earlier R11 (3k3), which limited it to 61%; the figures are referenced to deviation, so the board change does not alter them. Narrow is the mean of four runs, two each way, which agree within 1 dB.
+- **Not measured: 12 dB SINAD sensitivity** (the RF level at which SINAD falls to 12 dB, the receiver's weak-signal limit). It needs the RF level stepped, by changing pads; at a fixed -80 dBm every figure here is the strong-signal case.
 
 **Key-up and key-down timing**, seen at the receiver with the transmitting card already playing a tone when PTT changes:
 
