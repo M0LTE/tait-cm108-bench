@@ -99,17 +99,108 @@ SINAD (300 Hz to 3 kHz) against deviation, 1 kHz tone, Wide, -80 dBm:
 - **Above that, receive-side distortion takes over:** the third harmonic in the received audio rises from below -45 dBc to -34 dBc at 3 kHz, while the transmitted signal is clean. On a strong signal, extra deviation does not make a tone cleaner; on a weak one, where noise is the limit, it does.
 - **Leave the CM108B input gain at -12 dB.** With it 10 dB higher, signal, noise and SINAD all move together, so the sound card's own noise is irrelevant, and the open-channel noise peaks reach -1.4 dBFS.
 
-## Audio frequency response
+## End-to-end audio channel
 
-Wide, T12 and R2, 40-tone sweep 30 Hz to 12 kHz at about 1 kHz of deviation, relative to 1 kHz. **Transmit** is the deviation off air (sending CM108B, board output network, radio modulator). **Receive** is the receiving card's audio with the transmit response removed (receiving radio, board input network, CM108B input). Both radios and both boards agree within 0.3 dB; full data in [data/](data/).
+Sound card to sound card through both radios and the RF path: the sending CM108B, the board's output network, the transmitter (T12), the receiver (R2), the receiving board's input network and CM108B. Both channel widths, both directions, three sweeps each (100 tones, 10 Hz to 12 kHz, at -10 dBFS, which is 28% of the channel's maximum deviation on either width), plus a 512-tone multitone for phase and two key-up timings per direction. Raw results in [data/e2e/](data/e2e/); the scripts are [tools/e2etx.py](tools/e2etx.py) and [tools/e2ean.py](tools/e2ean.py).
 
-| Frequency | 30 Hz | 100 Hz | 300 Hz | 1 kHz | 3 kHz | 4.1 kHz | 4.8 kHz | 5.6 kHz | 6.5 kHz | 7.6 kHz | 8.8 kHz | 10.3 kHz | 12 kHz |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Transmit | -0.2 to 0.0 | 0.0 to +0.2 | +0.1 to +0.2 | 0 | -0.1 | -0.2 | -0.3 | -0.4 | -0.5 | -0.7 | -1.1 | -1.6 | -2.4 dB |
-| Receive | 0.0 | 0.0 | 0.0 | 0 | 0.0 | -0.1 to -0.3 | -0.4 to -0.6 | -1.2 to -1.4 | -2.8 to -3.0 | -5.7 to -5.9 | -10.5 | -19.3 | -37.7 dB |
+**Repeatability:** the three sweeps agree within 0.02 to 0.04 dB across the passband, and the two directions within 0.12 dB. These figures describe the combination, not one unit.
 
-- **Transmit is flat within 0.5 dB from 30 Hz to 6.5 kHz**: no pre-emphasis and no low-frequency limit, which suits 9600 and C4FSK.
-- **Receive is flat to 4 kHz, -3 dB at about 6.6 kHz, -6 dB at 7.6 kHz.** The roll-off is the radio's (the board's input network has no corner below 100 kHz, and a different CM108 interface measured the same shape). It costs the top carriers of `ofdm-fm-8k` about 6 dB. Measured on Wide; Narrow's IF filter will roll off sooner.
+**Amplitude**, relative to 1 kHz, mean of all six sweeps per width:
+
+| Frequency | Wide | Narrow |
+|---|---|---|
+| 10 Hz | -2.7 dB | -2.7 dB |
+| 15 Hz | -1.4 dB | -1.4 dB |
+| 20 Hz | -0.8 dB | -0.8 dB |
+| 30 Hz | -0.4 dB | -0.4 dB |
+| 50 Hz | -0.1 dB | -0.1 dB |
+| 100 Hz to 1 kHz | within 0.1 dB | within 0.1 dB |
+| 2 kHz | -0.1 dB | -0.2 dB |
+| 2.5 kHz | -0.1 dB | -0.5 dB |
+| 3 kHz | -0.2 dB | -1.0 dB |
+| 3.5 kHz | -0.3 dB | -1.8 dB |
+| 4 kHz | -0.4 dB | -3.2 dB |
+| 4.5 kHz | -0.6 dB | -5.3 dB |
+| 5 kHz | -1.0 dB | -8.1 dB |
+| 5.5 kHz | -1.6 dB | -11.9 dB |
+| 6 kHz | -2.4 dB | -16.9 dB |
+| 6.5 kHz | -3.5 dB | -23.3 dB |
+| 7 kHz | -4.7 dB | -31.3 dB |
+| 7.5 kHz | -6.2 dB | -41.5 dB |
+| 8 kHz | -8.0 dB | -55 dB |
+| 9 kHz | -12.3 dB | below -60 dB |
+| 10 kHz | -18.6 dB | below -60 dB |
+
+| | Wide | Narrow |
+|---|---|---|
+| Low-frequency -3 dB point | about 8 Hz | about 8 Hz |
+| Ripple, 30 Hz to 3 kHz | 0.5 dB p-p | 1.0 dB p-p (the top end already falling) |
+| -1 dB | 4.95 kHz | 3.0 kHz |
+| -3 dB | 6.3 kHz | 3.9 kHz |
+| -6 dB | 7.4 kHz | 4.65 kHz |
+| -10 dB | 8.5 kHz | 5.3 kHz |
+| -20 dB | 10.2 kHz | 6.3 kHz |
+
+- **The low end is set by the board and is the same on both widths:** a single first-order corner near 8 Hz, so 9600 and C4FSK get practically DC-flat audio down to about 30 Hz.
+- **The top end is the receiver's, and scales with the channel width.** A preset that fits Wide does not fit Narrow: on Narrow, anything above about 3.5 kHz is down 2 dB or more and the band is effectively closed above 5 kHz. (The transmit side alone is flat within 0.5 dB to 6.5 kHz, measured separately with an SDR.)
+
+**Phase.** Group delay, relative to its average from 211 Hz to 3 kHz, from the multitone:
+
+| Band | Wide | Narrow |
+|---|---|---|
+| 50 to 211 Hz | +125 to +145 microseconds (median), rising to about +750 at 23 Hz | the same |
+| 211 Hz to 3 kHz | within plus or minus 30 to 70 microseconds (the scatter is the measurement's) | the same |
+| 3 to 5 kHz | median +11 to +13 microseconds | the same |
+| 5 to 6.5 kHz | median +18 to +21 microseconds | median +13 to +20, scatter plus or minus 100 |
+| Above the -20 dB point | not meaningful | not meaningful |
+
+The channel is close to linear-phase across its passband on both widths: no measurable group-delay rise towards the top edge before the amplitude has already fallen 20 dB. Only the low-frequency corner adds delay, a few hundred microseconds below 100 Hz.
+
+**Distortion** (second and third harmonics of each sweep tone, at 28% of maximum deviation):
+
+| Tone | Wide H2 / H3 | Narrow H2 / H3 |
+|---|---|---|
+| 100 Hz to 1 kHz | -53 to -56 / -56 dBc | -56 / -58 dBc |
+| 1 to 2 kHz | -41 / -44 dBc | -47 to -49 / -49 dBc |
+| 2 to 3 kHz | -36 / -39 to -40 dBc | -44 / -42 dBc |
+| 3 to 4 kHz | -34 to -35 / -40 dBc | -42 / -45 dBc |
+
+Distortion rises with modulating frequency on both widths, by about 6 dB per octave above 1 kHz: second harmonic -55 dBc at low frequencies, -35 dBc at 3 to 4 kHz on Wide. It is the receiver's (the transmitted signal is cleaner than -55 dBc). Harmonics of the upper tones fall partly in the roll-off, so above about 3 kHz on Wide and 2 kHz on Narrow these figures flatter the channel.
+
+**Noise under an unmodulated carrier** at -80 dBm, receive audio with the CM108B input at -12 dB:
+
+| Band | Wide | Narrow |
+|---|---|---|
+| 100 Hz to 1 kHz | -105 dBFS/Hz | -99 dBFS/Hz |
+| 1 to 3 kHz | -110 dBFS/Hz | -104 to -105 dBFS/Hz |
+| 3 to 4 kHz | -101 to -106 dBFS/Hz | -97 to -102 dBFS/Hz |
+
+A tone at the same share of the channel's maximum deviation arrives at the same level on both widths (-32.5 dBFS rms for this sweep), so Narrow has about 5 to 6 dB less signal to noise than Wide at the same RF level, as expected for half the deviation.
+
+**Key-up and key-down timing**, seen at the receiver with the transmitting card already playing a tone when PTT changes:
+
+| | Wide | Narrow |
+|---|---|---|
+| Carrier arrives (receiver quiets) to modulation steady (within 1 dB) | 1.7 to 2.7 ms | 2.0 to 2.5 ms |
+| Modulation leaves its steady level to carrier gone | 1.8 to 2.6 ms | 1.7 to 2.6 ms |
+| Carrier duration against PTT duration | 5 ms shorter | 5 to 6 ms shorter |
+| Receiver: open noise to quieted | within 3 ms | within 3 ms |
+
+So the T12 path is live as soon as there is carrier, the receiver opens and closes within a few milliseconds, and there is no squelch tail (R2 is unsquelched). TXDELAY only needs to cover the transmitter's own time from PTT to carrier plus the modem's acquisition; TXTAIL only needs to cover the sound card's output buffer.
+
+### Sound card settings
+
+Checked on both boards, and how the bench runs:
+
+| | Setting |
+|---|---|
+| ALSA controls | Output (PCM) 0 dB, its maximum; input (Mic) -12 dB, its minimum; **Auto Gain Control off**. No mic boost control and no mic-to-output monitor path exist on this board (the CM108B's mixer path is strapped off). |
+| EEPROM | **Mic high-pass filter off, mic boost off**, MIC PLL Adjust on, total power control off, DAC active, volume limits not overridden |
+| Sound server | none: programs open the card directly |
+| Device | the raw hardware device (`hw:`), 48 kHz, 16-bit; capture is mono and playback stereo (the board uses the left channel), so no conversion layer is needed |
+| Other processing | none exists on the CM108B beyond AGC, mic boost and the high-pass filter |
+
+pdn-soundmodem forces AGC off and sets the two levels itself at start-up when its configuration has an `alsa.mixer` section.
 
 ## Noise and signal quality across the band
 

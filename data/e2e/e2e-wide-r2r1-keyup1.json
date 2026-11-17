@@ -1,0 +1,7 @@
+{
+ "carrier_to_modulation_ms": -4378.0,
+ "modulation_end_to_carrier_drop_ms": -4621.0,
+ "keyed_ms": 2995.0,
+ "open_noise_db": 14.6,
+ "quieted_db": -29.5
+}
