@@ -12,8 +12,8 @@ def mtone(w):
     rs = [json.load(open(f))['rows'] for f in sorted(glob.glob(f'{S}e2e-{w}-*-mtone.json'))]
     f = np.array([r['f'] for r in rs[0]]); gd = np.mean([[r['gd_us'] for r in x] for x in rs], 0)
     gds = np.array([np.mean(gd[max(0,i-(1 if f[i]<1000 else 4)):i+(2 if f[i]<1000 else 5)]) for i in range(len(gd))]); return f, gds
-def sinad_narrow():
-    rs = [json.load(open(f))['rows'] for f in sorted(glob.glob(f'{S}e2e-narrow-*-sinad*.json'))]
+def sinad(w):
+    rs = [json.load(open(f))['rows'] for f in sorted(glob.glob(f'{S}e2e-{w}-*-sinad*.json'))]
     p = np.array([r['pct'] for r in rs[0]]); return p, np.mean([[r['sinad_db'] for r in x] for x in rs], 0)
 # Wide SINAD against deviation, 1 kHz, measured 15 November at the same -80 dBm (deviation-referenced, so the board change does not affect it)
 wide_pct = np.array([0.31, 0.61, 0.97, 1.53, 2.16, 3.06])/5*100; wide_sinad = np.array([28, 34, 37.5, 40, 39.5, 37.5])
@@ -60,12 +60,11 @@ for mode, t in THEMES.items():
     finish(fig, ax, t, 'Distortion against modulating frequency', 'Tone at 28% of the channel maximum; rises about 6 dB per octave above 1 kHz (receiver)', 'distortion', mode)
     # 4 SINAD
     fig, ax = plt.subplots(figsize=(7.5, 4.2)); style(ax, t)
-    p, sn = sinad_narrow()
-    ax.plot(wide_pct, wide_sinad, color=t['s'][0], lw=2, marker='o', ms=6, label='Wide')
-    ax.plot(p, sn, color=t['s'][1], lw=2, marker='o', ms=6, label='Narrow')
+    for w, lbl, c in (('wide', 'Wide', t['s'][0]), ('narrow', 'Narrow', t['s'][1])):
+        p, sn = sinad(w); ax.plot(p, sn, color=c, lw=2, marker='o', ms=6, label=lbl)
     ax.axvline(60, color=t['ink2'], lw=0.8, ls=(0, (3, 3))); ax.text(61, 21.5, '60%: standard test point', color=t['ink2'], fontsize=8)
     ax.set_xlim(0, 95); ax.set_ylim(18, 42); ax.set_xlabel('1 kHz tone deviation, % of the channel maximum'); ax.set_ylabel('SINAD, 300 Hz to 3 kHz, dB')
-    finish(fig, ax, t, 'SINAD against deviation at -80 dBm', 'Rises with deviation to about 35 to 45% of the maximum, then receive distortion takes over', 'sinad', mode)
+    finish(fig, ax, t, 'SINAD against deviation at -80 dBm', 'Mean of four runs per width; rises to a peak at 30 to 40% of the maximum, then receive distortion takes over', 'sinad', mode)
     # 5 noise floor
     fig, ax = plt.subplots(figsize=(7.5, 4.2)); style(ax, t)
     for (f, L, h2, h3, n), lbl, c in ((W, 'Wide', t['s'][0]), (N, 'Narrow', t['s'][1])):

@@ -191,15 +191,16 @@ A tone at the same share of the channel's maximum deviation arrives at the same 
 
 | | Wide | Narrow |
 |---|---|---|
-| Peak SINAD | 40 dB, at about 30 to 40% of maximum | 37.3 dB, at about 40% |
-| SINAD at 60% (the standard figure) | about 37.5 dB | **35.6 dB** |
-| SINAD at 89% (sound card full scale) | not measured | 30.8 dB |
-| Distortion of the 1 kHz tone at 60% | about -36 dBc | -35.5 dBc |
-| FM hum and noise (60% tone against unmodulated carrier) | about 44 dB (estimated from the noise floor, not measured directly) | **39.4 dB** |
+| Peak SINAD | **39.5 dB**, at 30% of maximum | **37.3 dB**, at 40% |
+| SINAD at 60% (the standard figure) | **34.1 dB** | **35.6 dB** |
+| SINAD at 89% (sound card full scale) | 30.3 dB | 30.8 dB |
+| Distortion of the 1 kHz tone at 60% | -33.6 dBc | -35.5 dBc |
+| FM hum and noise (60% tone against unmodulated carrier) | **44.8 dB** | **39.4 dB** |
 
-- **SINAD rises with deviation only up to about 35 to 45% of the maximum.** Beyond that the receiver's own distortion dominates, so on a strong signal the channel is distortion-limited, not noise-limited. On a weak signal the peak moves to higher deviation.
-- **Narrow is about 2.5 to 6 dB behind Wide** on these measures, as expected for half the deviation.
-- Wide was measured on 15 November with the earlier R11 (3k3), which limited it to 61%; the figures are referenced to deviation, so the board change does not alter them. Narrow is the mean of four runs, two each way, which agree within 1 dB.
+Each width is the mean of four runs, two each way, which agree within 1 dB.
+
+- **SINAD rises with deviation only up to 30 to 40% of the maximum.** Beyond that the receiver's own distortion dominates: on a strong signal the channel is distortion-limited, not noise-limited. On a weak signal the peak would move to higher deviation.
+- **Below the peak, Wide is 2 to 6 dB better** (twice the deviation for the same share of the channel, and noise is the limit there). **Above about 45%, Narrow is as good or slightly better,** because Wide's larger deviation brings more receiver distortion. The hum and noise ratio, which has no distortion in it, is 5.4 dB better on Wide.
 - **Not measured: 12 dB SINAD sensitivity** (the RF level at which SINAD falls to 12 dB, the receiver's weak-signal limit). It needs the RF level stepped, by changing pads; at a fixed -80 dBm every figure here is the strong-signal case.
 
 **Key-up and key-down timing**, seen at the receiver with the transmitting card already playing a tone when PTT changes:

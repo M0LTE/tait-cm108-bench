@@ -1,0 +1,74 @@
+{
+ "rows": [
+  {
+   "pct": 5,
+   "sinad_db": 26.7,
+   "thd_db": -34.7,
+   "level_dbfs": -45.7,
+   "snr_vs_carrier_db": 23.3
+  },
+  {
+   "pct": 10,
+   "sinad_db": 32.2,
+   "thd_db": -40.3,
+   "level_dbfs": -39.7,
+   "snr_vs_carrier_db": 29.2
+  },
+  {
+   "pct": 20,
+   "sinad_db": 37.7,
+   "thd_db": -43.3,
+   "level_dbfs": -33.7,
+   "snr_vs_carrier_db": 35.2
+  },
+  {
+   "pct": 30,
+   "sinad_db": 39.8,
+   "thd_db": -42.2,
+   "level_dbfs": -30.2,
+   "snr_vs_carrier_db": 38.8
+  },
+  {
+   "pct": 40,
+   "sinad_db": 38.4,
+   "thd_db": -38.9,
+   "level_dbfs": -27.7,
+   "snr_vs_carrier_db": 41.2
+  },
+  {
+   "pct": 50,
+   "sinad_db": 36.3,
+   "thd_db": -36.0,
+   "level_dbfs": -25.8,
+   "snr_vs_carrier_db": 43.2
+  },
+  {
+   "pct": 60,
+   "sinad_db": 34.3,
+   "thd_db": -34.0,
+   "level_dbfs": -24.2,
+   "snr_vs_carrier_db": 44.7
+  },
+  {
+   "pct": 70,
+   "sinad_db": 32.7,
+   "thd_db": -32.0,
+   "level_dbfs": -22.9,
+   "snr_vs_carrier_db": 46.1
+  },
+  {
+   "pct": 80,
+   "sinad_db": 31.3,
+   "thd_db": -30.5,
+   "level_dbfs": -21.8,
+   "snr_vs_carrier_db": 47.2
+  },
+  {
+   "pct": 89,
+   "sinad_db": 30.2,
+   "thd_db": -29.5,
+   "level_dbfs": -20.8,
+   "snr_vs_carrier_db": 48.1
+  }
+ ]
+}
