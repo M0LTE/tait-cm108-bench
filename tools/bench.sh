@@ -1,6 +1,6 @@
-# Source this on a machine that can ssh to both Pis. Top radio (19925369) is on radio1 with the RSP1; bottom (19925328) on radio2.
+# Source this on a machine that can ssh to both Pis. Top radio (19925369) is on radio1 with the RSP1; bottom (19924394) on radio2.
 R1=pi@radio1; R2=pi@radio2; D=tait-pair
-top=("$R1" /dev/tait-ptt-20000002 Tait20000002 tait-top); bot=("$R2" /dev/tait-ptt-20000005 Tait20000005 tait-bottom)
+top=("$R1" /dev/tait-ptt-20000005 Tait20000005 tait-top); bot=("$R2" /dev/tait-ptt-20000002 Tait20000002 tait-bottom)
 GAIN=${GAIN:-IFGR=36,RFGR=0}
 modems() { ssh $R1 "sudo systemctl $1 pdn-soundmodem@tait-top"; ssh $R2 "sudo systemctl $1 pdn-soundmodem@tait-bottom"; }
 # sdr TAG SECONDS : RSP1 capture to ~/tait-pair/TAG.cf32 on radio1 (returns when it ends)
@@ -9,6 +9,9 @@ sdr() { ssh $R1 "cd $D && rm -f $1.cf32 && rx_sdr -d driver=sdrplay -f 146440000
 rec() { local -n r=$1; ssh ${r[0]} "cd $D && arecord -q -D plughw:CARD=${r[2]},DEV=0 -f S16_LE -r 48000 -c 1 -d $3 $2.wav"; }
 # tx top|bot GEN-ARGS... : generate a test WAV on that radio's Pi and transmit it (modems must be stopped)
 tx() { local -n r=$1; shift; ssh ${r[0]} "cd $D && python3 gen.py $1 /tmp/bench.wav ${*:2} && python3 play.py ${r[1]} ${r[2]} /tmp/bench.wav"; }
+# quiet TXRADIO TAG SECONDS : the other radio's audio under SECONDS of unmodulated carrier, no RSP1 (for wavan.py spurs)
+quiet() { local t=$1 tag=$2 secs=$3 o=bot; [ $t = bot ] && o=top
+  rec $o $tag $((secs+3)) & sleep 2; tx $t carrier $secs; wait; }
 # shot TXRADIO TAG SECONDS GEN-ARGS... : RSP1 + the other radio's audio, both for SECONDS, around one transmission
 shot() { local t=$1 tag=$2 secs=$3; shift 3; local o=bot; [ $t = bot ] && o=top
   sdr $tag $((secs+6)) & rec $o $tag $((secs+4)) & sleep 5; tx $t "$@"; wait; }

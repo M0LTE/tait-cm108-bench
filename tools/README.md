@@ -1,14 +1,14 @@
 # Bench tools
 
-The scripts the factsheet's figures come from. They run from any machine that can ssh to both Pis as `pi@radio1` (top radio 19925369, board 20000002, and the RSP1) and `pi@radio2` (bottom radio 19925328, board 20000005). The Python files live in `~/tait-pair` on each Pi (copy them there after editing); Python 3 with numpy, `aplay`/`arecord`, and `rx_sdr` with the SDRplay driver on radio1.
+The scripts the factsheet's figures come from. They run from any machine that can ssh to both Pis as `pi@radio1` (top radio 19925369, board 20000005, and the RSP1) and `pi@radio2` (bottom radio 19924394, board 20000002). The Python files live in `~/tait-pair` on each Pi (copy them there after editing); Python 3 with numpy, `aplay`/`arecord`, and `rx_sdr` with the SDRplay driver on radio1.
 
 | File | Runs on | What it does |
 |---|---|---|
 | `bench.sh` | control machine | Shell functions that drive both Pis. Source it. |
-| `gen.py` | Pi | Writes a test WAV: tone, level ladder, frequency sweep or multitone. |
+| `gen.py` | Pi | Writes a test WAV: tone, bare carrier (silence), level ladder, frequency sweep or multitone. |
 | `play.py` | Pi | Keys the radio through the CM108 and plays a WAV. Always unkeys. |
 | `iqan.py` | radio1 | Reads an RSP1 capture: deviation ladder, deviation from sideband amplitudes, deviation of modem bursts. |
-| `wavan.py` | Pi | Reads a receive-audio recording: open-channel level, ladder levels and SINAD, noise floor under a carrier. |
+| `wavan.py` | Pi | Reads a receive-audio recording: open-channel level, ladder levels and SINAD, noise floor under a carrier, and narrow tones under a carrier (`spurs`, which exits 1 if one stands more than 10 dB over the noise in 23.4 Hz). |
 | `clock.py` | radio1 | Playback and capture clock error and wander from one 1 kHz transmission. |
 | `sweepan.py` | radio1 | Transmit and receive frequency response from a sweep (expects `sw-TAG.cf32`, `sw-TAG.wav` and `sweep-schedule.json` in `~/tait-pair`). |
 | `mtone.py` | Pi | `mtone.py an FILE`: per-band signal quality of a multitone recording (WAV or RSP1 capture). |
@@ -39,6 +39,12 @@ ssh pi@radio1 'cd tait-pair && python3 clock.py clk-b2t.cf32 clk-b2t.wav'
 shot top clk-t2b 12 tone 1000 -3 12
 scp pi@radio2:tait-pair/clk-t2b.wav /tmp/ && scp /tmp/clk-t2b.wav pi@radio1:tait-pair/
 ssh pi@radio1 'cd tait-pair && python3 clock.py clk-t2b.cf32 clk-t2b.wav'
+
+# Receive tones: 14 s of bare carrier each way, then every narrow tone in the other radio's audio. No RSP1 needed.
+quiet top q-top 14
+ssh pi@radio2 'cd tait-pair && python3 wavan.py spurs q-top.wav'
+quiet bot q-bot 14
+ssh pi@radio1 'cd tait-pair && python3 wavan.py spurs q-bot.wav'
 
 # Multitone signal quality at -12 dBFS rms.
 shot top mt-top 7 mtone -12

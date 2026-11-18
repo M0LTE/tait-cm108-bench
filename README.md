@@ -1,13 +1,14 @@
 # Tait TM8110 + tait-cm108: bench factsheet
 
-What a bench of two Tait TM8110 radios with the [packethacking/tait-cm108](https://github.com/packethacking/tait-cm108) internal options board shows about that combination, for anyone setting one up or building modems for it. Measured November 2026. The scripts are in [tools/](tools/), with a how-to in [tools/README.md](tools/README.md); raw data is in [data/](data/).
+What a bench of two Tait TM8110 radios with the [packethacking/tait-cm108](https://github.com/packethacking/tait-cm108) internal options board shows about that combination, for anyone setting one up or building modems for it. It is about the radios and the board; what a particular modem makes of them belongs with that modem (there are pointers under [For modem builders](#for-modem-builders)). Measured November 2026. The scripts are in [tools/](tools/), with a how-to in [tools/README.md](tools/README.md); raw data is in [data/](data/).
 
 **Headline:**
 
-1. **Set the CM108B's "MIC PLL Adjust" EEPROM bit on every board.** As shipped, its capture clock runs about 520 ppm away from its playback clock, which is invisible to tones and AFSK but stops ofdm-fm decoding entirely. One EEPROM word fixes it. See [Sample clock](#cm108b-sample-clock).
+1. **Set the CM108B's "MIC PLL Adjust" EEPROM bit on every board.** As shipped, its capture clock is not locked to anything: it has been seen from 520 to 1930 ppm away from its playback clock on the same two boards, and it moves by hundreds of ppm in minutes. Tones and AFSK do not notice; anything that assumes the two ends sample at the same rate does. One EEPROM word locks it. See [Sample clock](#cm108b-sample-clock).
 2. **Fit R11 = 2k0 (not 3k3).** With the transmit tap on T12, the as-built divider limits full-scale deviation to 62% of the channel maximum; 2k0 gives 88 to 90%. On the densest ofdm-fm preset that doubled the frames delivered. See [Output level: R11](#output-level-r11).
 3. **Use R2 and T12.** Both are levelled by the radio to the channel width, so one set of levels serves Narrow and Wide.
 4. Otherwise the board works as built: linear, two boards matched within 0.4 dB, audio flat from 30 Hz to about 5 kHz.
+5. **Check each receiver for a tone under a quiet carrier.** On this channel one radio position has a tone near 4 kHz in its receive audio, 22 dB over the noise in a narrow band. It costs a wide OFDM signal two or three carriers and nothing else. There is a one-line test. See [Receive tones](#receive-tones).
 
 ## Verdict
 
@@ -23,12 +24,12 @@ What is good:
 
 What needed fixing (both are cheap):
 
-- **Capture clock**: as shipped it runs 520 ppm away from playback, which silently stops OFDM working. One EEPROM bit fixes it, and boards should ship with it set.
+- **Capture clock**: as shipped it runs free, 520 to 1930 ppm away from playback and moving. One EEPROM bit locks it to USB timing, and boards should ship with it set.
 - **Output level**: 62% of the maximum deviation on T12 as built. R11 = 2k0 brings it to 88 to 90%, which doubled delivery on the hardest ofdm-fm preset.
 
 What limits it:
 
-- **The CM108B has no crystal.** Even with the fix its capture clock wanders slightly within a burst, and between different computers the sample-rate mismatch depends on their USB clocks. Every single-carrier mode copes; OFDM would benefit from the modem correcting rate offset ([pdn-soundmodem #809](https://github.com/packet-net/pdn-soundmodem/issues/809)). A crystal-referenced codec would avoid the issue altogether.
+- **The CM108B has no crystal.** Even locked, its clocks hunt: from one key-up to the next the rate between two boards is anywhere within about 300 ppm of nominal, and inside a transmission it steps by hundreds of ppm for tens of milliseconds at a time. Every single-carrier mode copes. A wide OFDM modem has to measure the clock from each burst and follow it; one that does loses nothing to it. A crystal-referenced codec would avoid the issue altogether.
 - **The radio's receiver distortion.** SINAD tops out at about 37 to 40 dB, and above 30 to 40% of the maximum deviation the receiver's own distortion is the limit. That is typical of a good analogue FM radio and far more than AFSK, 9600 or C4FSK need, but it is the ceiling for dense OFDM.
 - **Narrow channels.** About 4 kHz of usable audio on Narrow rules out the wide OFDM presets on 12.5 kHz channels. That is the radio's IF filter, not the interface.
 - **Minor**: the board's second serial port ("TaitProgramming") does nothing, programming still needs a lead in the mic socket, and on the bench one board's sound card dropped off USB once in about 14 hours of use.
@@ -53,7 +54,8 @@ Each board appears on USB as a hub carrying a CM108B sound card, a CP2102N "Tait
 - **At -80 dBm the receivers are not fully quieted above 1 kHz.** Taking 3.5 dB out of the path (an SDR tee) raised receive noise above 1 kHz by 2 to 3 dB and cost the margin preset most of its frames. Keep the path loss fixed between anything you compare.
 - **An SDR on a tee is a good deviation meter** (48 dB in-channel signal to noise) but **cannot verify an attenuator chain**: with a 1 W transmitter nearby it picks the signal up by other routes at roughly 60 dB below the transmitter, so readings stop falling once the wanted signal is weaker than that. Check pad chains with the radios' own RSSI instead.
 - **SMA joints can pass DC and not RF.** A continuity check across a pad chain proves nothing about attenuation; a joint that is not fully mated can lose 15 dB. Check end-to-end RF level against the sum of the pads.
-- **ofdm-fm frame counts move from minute to minute** with nothing changed (`ofdm-fm-8k` has swung between 60% and 100% within the hour). Compare settings only in interleaved rounds, at least four rounds of 20 frames each way.
+- **Frame counts from a clock-sensitive modem move from minute to minute** with nothing changed (`ofdm-fm-8k` on pdn-soundmodem 0.108.0 swung between 60% and 100% within the hour). The cause turned out to be the sound cards' clocks, which wander more at some times than others (see [Sample clock](#cm108b-sample-clock)). Compare settings only in interleaved rounds, at least four rounds of 20 frames each way.
+- **A board can be power-cycled from its Pi**, which is what an EEPROM change needs: `sudo uhubctl -l 2 -a off; sudo uhubctl -l 1-1 -a off`, wait 8 s, then both `-a on`. The sound card comes back with its mixer at defaults (output at -20 dB), so set the levels again afterwards.
 
 ## Codeplug
 
@@ -265,35 +267,99 @@ pdn-soundmodem forces AGC off and sets the two levels itself at start-up when it
 
 Quality falls about 15 dB across the band, and above 1 kHz lower drive is cleaner, so distortion as well as noise sets it at these levels. -12 dBFS rms is where an `ofdm-fm-8k` burst sits. The method understates distortion (third-order products land on the tones, not in the gaps); treat the figures as upper bounds.
 
+**The same thing measured with real bursts**, R11 = 2k0, full drive: 640 `ofdm-fm-8k` bursts, each sent four times and compared with the samples that were played once the sound cards' clock had been taken out. What differs between copies of one burst is noise; what repeats but was not sent is distortion.
+
+| Audio band | Signal to noise | Signal to distortion | Signal to both |
+|---|---|---|---|
+| 0.2 to 1 kHz | 34 to 37 dB | 46 to 47 dB | 34 to 36 dB |
+| 1 to 2 kHz | 39 to 41 dB | 40 to 43 dB | 37 to 38 dB |
+| 2 to 3 kHz | 39 to 40 dB | 36 to 37 dB | 34 to 35 dB |
+| 3 to 4 kHz | 33 dB (27.6 into the radio with the tone) | 31 to 32 dB | 29 dB (26) |
+| 4 to 6 kHz | 30 to 32 dB | 29 to 30 dB | 27 to 28 dB |
+| 6 to 8 kHz | 26 to 29 dB | 26 to 28 dB | 23 to 26 dB |
+
+- **Above about 1.5 kHz at full drive the limit is distortion, not noise.** It repeats exactly between copies, rises with frequency and falls 3 to 4 dB when the drive is taken down 3 dB, which is what second-order distortion in the receiver does. Noise moves the other way, so the total hardly changes between full drive and -3 dB.
+- **The channel is 13 dB better at 1.5 kHz than at 7.5 kHz**, where its gain falls only 8 dB. A modem that weights carriers by gain alone trusts the top of the band too much.
+- **Above about 3 kHz the noise at -80 dBm is the receiver's thermal noise.** FM theory for a noise figure of 7 dB puts it at -107.5 dBFS/Hz at 4 kHz, rising 6 dB an octave; measured, -106 dBFS/Hz from 3 to 5 kHz. So up there it rises dB for dB as the path gets weaker (the 3.5 dB an SDR tee took out of the path raised it 2 to 3 dB). Below about 1.5 kHz it is a floor of the radios' own, 20 dB over the thermal figure at 500 Hz, which more path loss does not move until the thermal noise reaches it.
+
+## Receive tones
+
+**One radio position has a tone near 4 kHz in its receive audio whenever it hears a carrier.** It is not in the other radio's transmission (checked with the RSP1), not on battery or mains, not the programming lead and not the board.
+
+| When | Radio in that position | Tone | Level |
+|---|---|---|---|
+| 15 Nov | 19925328 | 3882 to 3902 Hz, drifting | 26 dB over the noise around it, about 9 Hz of deviation |
+| 17 Nov | 19925328, after the boards swapped radios | 4.05 kHz | 23 dB |
+| 17 to 18 Nov | 19924394 (its replacement) | 3661 Hz when the far transmitter is cold, 3770 to 3920 Hz once it has been keying for some minutes | 22 dB over the noise in 23.4 Hz, about 16 Hz of deviation |
+| 18 Nov | 19925369 (the other position) | none; a faint one at 990 Hz | 6 dB |
+
+- **It is a beat, not an audio tone.** It moves by hundreds of hertz with temperature, where anything made at audio frequency would stay put. So the receiver is hearing a second, very weak carrier about 4 kHz from the wanted one, and the tone is the difference between them. 16 Hz of deviation at 3.66 kHz makes that carrier 47 dB below the wanted one: about -127 dBm, far below anything a voice user would notice.
+- **Where the second carrier comes from is not established**, but two different radios in that position have both put it within 350 Hz of 4.000 kHz, and that is a strong hint. 146.500 MHz is exactly 4 kHz above a multiple of 8, 16, 32 and 48 kHz (146.496 MHz), so a harmonic of any clock at one of those rates lands there, and to stay within 350 Hz at 146 MHz that clock must be good to about 2 ppm. The radio's own reference is; the Pi's USB clock (130 ppm low) and the sound card's clocks are not, and would put the beat tens of kilohertz away. That points at a clock inside the radio, which would make this a property of the TM8110 on this channel and not a faulty unit. The test that would settle it is one channel step: at 146.5125 MHz a comb of 8 kHz harmonics puts the tone near 500 Hz, a comb of 48 kHz harmonics puts it out of the passband, and a fixed outside signal goes the same way.
+- **It does not spread under modulation.** With a full-drive OFDM burst on the channel it still takes out two or three carriers of 333 (10 to 16 dB each) and leaves the rest as good as the other radio's.
+- **A notch is the wrong cure** (it costs more carriers than the tone does). A modem that weights each carrier by the noise it actually shows loses about half a decibel of margin to it.
+
+**The test.** Key the far radio with no audio for 14 s, record the near radio's receive audio, and list every narrow tone that stands clear of the noise ([tools/wavan.py](tools/wavan.py) `spurs`, [tools/bench.sh](tools/bench.sh) `quiet`):
+
+```sh
+source tools/bench.sh; modems stop
+quiet top q-top 14          # top radio sends a bare carrier, bottom radio's audio is recorded
+ssh pi@radio2 'cd tait-pair && python3 wavan.py spurs q-top.wav'
+```
+
+```
+14.2 s of quiet carrier; noise -109.9 dBFS/Hz at 1 to 3 kHz, -106.0 at 3 to 5 kHz
+    993.8 Hz   -93.4 dBFS   +1.6 dB over the noise in 23.4 Hz  about 1.3 Hz of deviation  9 Hz wide  a multiple of 1 kHz: USB frame-rate pickup on the board
+   3663.6 Hz   -71.3 dBFS  +21.8 dB over the noise in 23.4 Hz  about 16.5 Hz of deviation  6 Hz wide  as a second carrier 3.66 kHz off channel it would be -47 dBc
+   3999.4 Hz   -88.2 dBFS   +4.0 dB over the noise in 23.4 Hz  about 2.3 Hz of deviation  6 Hz wide  a multiple of 1 kHz: USB frame-rate pickup on the board
+FAIL: a tone that is not the USB frame rate stands 21.8 dB over the noise in one carrier (limit 10)
+```
+
+It reports each tone's frequency, its level, how far it stands over the noise in 23.4 Hz (the width of one `ofdm-fm` carrier, so the figure is roughly what that carrier loses), and the deviation it amounts to. Tones at multiples of 1 kHz are the USB frame rate picked up on the board; they are small and are not counted. It exits 1 if anything else stands more than 10 dB clear. Both of today's results are in [data/spurs/](data/spurs/). Run it in both directions on any new pair, and again after moving channel.
+
 ## CM108B sample clock
 
-As shipped, the CM108B plays back locked to the host's USB timing but its capture clock runs free:
+The CM108B has no crystal. It plays back locked to the host's USB timing; what its capture clock does depends on one EEPROM bit.
 
 | | Playback (DAC) | Capture (ADC), as shipped | Capture (ADC), MIC PLL Adjust on |
 |---|---|---|---|
-| Rate against a 1 ppm reference | the host's USB clock (-130 and -135 ppm on two Pi 4s) | +353 to +393 ppm | the host's USB clock, within about 10 ppm |
+| Rate against a 1 ppm reference, 15 Nov | the host's USB clock (-130 and -135 ppm on two Pi 4s) | +353 to +393 ppm | the host's USB clock, within about 10 ppm |
 
-So as shipped, every link between two of these boards carries a fixed **mismatch of about 520 ppm**: 22 samples of drift across a 0.9 s burst. Tones, levels and AFSK do not notice; ofdm-fm decodes nothing.
+**As shipped, the capture clock is not a fixed offset. It coasts, and it moves.** The mismatch between two of these boards (one playing, one capturing), same two boards throughout:
+
+| When | Mismatch |
+|---|---|
+| 15 Nov | about 520 ppm |
+| 18 Nov, 3 minutes after a power cycle | 1890 ppm |
+| 13 minutes after | 1690 ppm |
+| 80 minutes after, with a lot of transmitting | 1550 ppm |
+| 18 Nov, a second power cycle: 30 s after | 1460 ppm |
+| 1.5 to 4.5 minutes after | 1670 to 1800 ppm |
+| straight after 30 s of carrier each way | 1410 to 1470 ppm |
+
+So budget for anything up to about 2000 ppm, and for it to shift by 300 ppm in a minute. Measured over two-minute stretches it is steadier than the locked clock (the rate from one key-up to the next spreads by 12 to 31 ppm against 25 to 39), and it wanders less inside a burst (nine bursts in ten under 13 microseconds against 20 to 31).
 
 - **The fix:** EEPROM word **0x2B from 7A02 to 7A12** (bit 4, "MIC PLL Adjust"). The capture clock then follows the USB timing, and the mismatch between two stations is the difference between their hosts' USB clocks.
-- It takes effect only after the board is power-cycled (unplug and replug). A USB reset is not enough.
-- For some minutes after power-up the capture clock settles, with swings of several hundred ppm. Let a board settle before testing.
-- **It trades a fixed error for a moving one.** Worst timing excursion within any 1.5 s, after removing that stretch's own average rate:
+- It takes effect only after the board is power-cycled (unplug and replug, or `uhubctl` as under [Test setup](#test-setup)). A USB reset is not enough.
+- **Give a board a minute after power-up.** The first three key-ups after a power cycle with the bit set read -674, -190 and -76 ppm.
+
+**Locked, it trades a large moving error for a small one that moves faster.** Worst timing excursion within any 1.5 s, after removing that stretch's own average rate:
 
 | | As shipped | MIC PLL Adjust on |
 |---|---|---|
 | Playback clock | 23 to 24 microseconds (one-sample steps about once a second, following USB frames) | 21 to 26 microseconds |
 | Capture clock | 7 to 11 microseconds | **33 to 61 microseconds** (hunts 20 to 40 microseconds either way) |
 
-  40 microseconds is 2 radians of phase at 8 kHz. Whether this wander limits the dense presets is not established. A free-running capture clock with software resampling by the measured offset is the alternative ([pdn-soundmodem #809](https://github.com/packet-net/pdn-soundmodem/issues/809)).
+What that looks like from the far end, with the bit set on both boards, measured by comparing 1360 recorded bursts with the samples that were played:
 
-**Between different computers**, the mismatch is the difference between their USB clocks. Two Pi 4s here were 3 to 15 ppm apart, which is luck; 100 to 200 ppm is ordinary. Tolerance measured offline, by resampling 20 real `ofdm-fm-8k` bursts (an already marginal set, 7/20 unaltered) and decoding them with `pdn-soundmodem --wav`:
+- **Every key-up arrives at its own rate.** Mean +46 ppm, spread 57 ppm, from -278 to +312; one in eight more than 100 ppm out. The two hosts' USB clocks are within 5 ppm of each other, so this is the cards, not the computers.
+- **Inside a transmission the timing zig-zags** by 20 to 60 microseconds, the rate stepping by 200 to 500 ppm for tens of milliseconds at a time, with occasional jumps of about one sample. Longer bursts hold more of it: median wander 10 microseconds under 0.7 s, 22 at 1 s, 46 at 1.8 s.
+- **It comes and goes.** The spread from one key-up to the next was 25 to 39 ppm for an hour and then about 70 ppm in one direction with nothing changed.
+- **Starting the playback stream early does not calm it** (1.5 s of silence before the audio: no difference).
+- Both cards take part. The split between the sending card's playback clock and the receiving card's capture clock has not been measured cleanly.
 
-| Offset | -300 | -200 | -100 | -50 | 0 | +50 | +100 | +200 | +300 ppm |
-|---|---|---|---|---|---|---|---|---|---|
-| Decoded of 20 | 2 | 3 | 6 | 10 | 7 | 9 | 9 | 6 | 2 |
+40 microseconds is 2 radians of phase at 8 kHz, and a rate that is 100 ppm out slides a 43 ms OFDM symbol through its own window. Single-carrier modems track all of this without noticing.
 
-Flat within the run-to-run spread to about plus or minus 100 ppm, failing beyond. The single-carrier modems track 500 ppm or more.
+**Between different computers**, the locked mismatch adds the difference between their USB clocks. Two Pi 4s here were 3 to 15 ppm apart, which is luck; 100 to 200 ppm is ordinary.
 
 ## CM108B EEPROM
 
@@ -305,7 +371,7 @@ As shipped ([data/](data/) has the dumps):
 | Product / manufacturer / serial | "TaitCM108" / "M9TWM" / board serial |
 | Mic input high-pass filter | **off** (good for 9600 and other low-frequency modes) |
 | Mic boost | **off** |
-| MIC PLL Adjust | **off as shipped; turn it on** (word 0x2B bit 4) |
+| MIC PLL Adjust | **off as shipped; turn it on** (word 0x2B bit 4): see [Sample clock](#cm108b-sample-clock) |
 | DAC (output) volume range | -36 to 0 dB in 1 dB steps (ALSA), muting below |
 | ADC (input) volume range | -12 to +23 dB |
 
@@ -331,26 +397,22 @@ The output path is CM108B line out, C29, a divider of R11 (series) and R12 (shun
 - With 2k0 the CM108B line output drives 3 kohm, between the 10 kohm and 32 ohm loads it is specified for; coupling corners stay below 6 Hz.
 - **Measured after the change:** +3.2 dB on both boards, within 2% of the prediction, still linear and clean.
 
-## ofdm-fm results
+## For modem builders
 
-pdn-soundmodem 0.108.0, one station per Pi, Wide, path at -80 dBm, MIC PLL Adjust on, R11 = 2k0. KISS channel access set before every run on both stations: **persistence 255, slot time 10 ms, TXDELAY 50 ms, TXTAIL 50 ms**, so no random back-off. Carrier sense from each radio's CCDI RSSI (busy above -110 dBm). Frames are AX.25 UI, counted byte-identical at the far KISS port. Interleaved rounds of 20 frames each way; "-3 dB" is the old (R11 = 3k3) full-scale level.
+What the measurements above mean for a modem on this combination. Results for particular modems live with those modems.
 
-| Preset, frame | Full drive | -3 dB |
-|---|---|---|
-| `ofdm-fm-8k`, 1024 B | 77/80 | 80/80 |
-| `ofdm-fm-8k-r78`, 1900 B | **66/80** | **34/80** |
-
-- **The extra 3 dB of deviation from R11 = 2k0 doubles what the margin preset delivers.** The same effect appeared in every drive comparison on this bench, before and after the change.
-- `ofdm-fm-8k` has margin either way and runs at about 16.7 kbit/s at 1024 B; `ofdm-fm-8k-r78` reaches 23 to 24 kbit/s at 1900 B when frames arrive.
-- **The two directions are not always equal at the margin**, and a weak direction can swing from 8/20 to 20/20 between rounds. Tone, response and multitone tests are symmetric, so the cause is something they do not see.
-- Before MIC PLL Adjust, nothing decoded on any preset, including `ofdm-fm-narrow`.
-- **The modem reports nothing about a burst it fails to decode**, and no signal-to-noise figure for ofdm-fm frames, so delivered counts are the only live measure.
+- **Tones, AFSK, 9600 and C4FSK** need nothing special: the audio path is flat and nearly DC-coupled, turnaround is a few milliseconds, and their timing recovery rides over the sound cards' clocks.
+- **A wide OFDM modem must follow the sample clock inside each burst.** One that assumes a fixed rate, or measures it from a handful of pilots, loses bursts at random as the clocks hunt: pdn-soundmodem 0.108.0 lost about a third of its `ofdm-fm` bursts that way on this bench, and decoded nothing at all between boards without MIC PLL Adjust. A receiver that measures each symbol's timing from all of its carriers and resamples loses none to the clock, with the bit set or clear ([pdn-soundmodem #811](https://github.com/packet-net/pdn-soundmodem/pull/811) has the measurements).
+- **Weight carriers by the noise they show, not by channel gain.** The top of an 8 kHz span is 13 dB worse than the bottom and one receiver here has a tone on two or three carriers; gain alone says neither.
+- **Deviation is worth having.** R11 = 2k0 gave 3.2 dB more than the board as built, and on the densest `ofdm-fm` preset that doubled the frames delivered at the margin (66 of 80 against 34 of 80 on 0.108.0).
+- **Full drive is the right place at -80 dBm.** Noise plus distortion at the top of the band is flat between full drive and 3 dB less; a weaker path would want all the deviation it can have.
+- **How far the path can weaken** has only been estimated, by adding each receiver's measured noise to recordings. Above 3 kHz that noise is thermal and does rise dB for dB with path loss, so the estimate is fair there; stepping the RF level with pads would measure it.
 
 ## Open questions
 
-- Why `ofdm-fm-8k` delivery comes and goes over minutes with nothing changed. Seeing failed bursts is the first thing needed.
-- Why one direction can be weaker at the ofdm-fm margin when every analogue measurement is symmetric.
-- Whether the capture clock's wander after MIC PLL Adjust limits the dense presets, and whether a free-running clock with software resampling would do better.
-- Why lower drive gives a cleaner multitone above 1 kHz but worse `ofdm-fm-8k-r78` delivery.
-- Clock offsets between other computers, and station-side rate correction (pdn-soundmodem #809).
+- **Where the receive tone comes from** ([Receive tones](#receive-tones)). One channel step would say whether it is a clock inside the radio.
+- **How the free-running capture clock behaves over hours**, and what moves it. It has been seen from 520 to 1930 ppm.
+- **The split of the locked clocks' wander** between the sending card's playback and the receiving card's capture. An SDR listening off air gives it; on a tee it costs path, so couple it loosely instead.
+- **12 dB SINAD sensitivity**, and with it how every figure here changes on a weak signal. It needs the RF level stepped with pads.
+- Clock offsets between other computers.
 - The receive response and signal quality on Narrow, and the burst deviation after R11 = 2k0, have not been measured directly.

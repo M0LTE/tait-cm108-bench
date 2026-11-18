@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Write a 48 kHz mono test WAV.
   gen.py tone   OUT HZ DBFS SECONDS
+  gen.py carrier OUT SECONDS     silence: keyed, it is an unmodulated carrier (for wavan.py spurs)
   gen.py ladder OUT              1 kHz at -20 -14 -10 -6 -3 0 dBFS, 2 s each
   gen.py sweep  OUT DBFS         40 tones 30 Hz to 12 kHz, 1 kHz reference before and after; schedule in OUT.json
   gen.py mtone  OUT RMS_DBFS     84 tones 211 Hz to 8 kHz with empty bins between them, 6 s
@@ -31,6 +32,8 @@ if __name__ == '__main__':
     kind, out = sys.argv[1], sys.argv[2]
     if kind == 'tone':
         x = tone(float(sys.argv[3]), float(sys.argv[4]), float(sys.argv[5]))
+    elif kind == 'carrier':
+        x = np.zeros(int(FS * float(sys.argv[3])))
     elif kind == 'ladder':
         x = np.concatenate([tone(1000, d, 2.0) for d in LADDER])
     elif kind == 'sweep':
