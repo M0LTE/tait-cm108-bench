@@ -294,13 +294,17 @@ Quality falls about 15 dB across the band, and above 1 kHz lower drive is cleane
 | 19924394 | 3.5 to 3.9 kHz | 21 to 22 dB over the noise in 23.4 Hz, about 16 Hz of deviation |
 | 19925369 | about 1.2 kHz, and about 3.6 kHz | 7 to 9 dB, and 2 to 5 dB |
 
+Both radios also show a faint tone (2 dB or less) that changes with the channel and not with temperature, 585 Hz on 146.500 MHz. That one is on the transmitted carriers, about 2 Hz of deviation, and is not the subject here.
+
 What is established, on 19924394:
 
 - **It is the same on every channel.** Nine channels from 146.000 to 146.550 MHz, including ones chosen to move or remove it if it were a clock harmonic landing near the channel: the tone was there on all of them at 21 dB, between 3510 and 3867 Hz ([data/spurs/channels/](data/spurs/channels/)). Changing channel does not avoid it.
 - **Its frequency is the radio's own temperature.** Idle, with the PA sensor at 27 degrees: 3604 Hz, creeping down 17 Hz in 100 s. Straight after that radio had transmitted for 100 s (sensor 33 degrees): 3783 Hz, sliding back to 3693 Hz over the next 100 s ([data/spurs/](data/spurs/), the two `track` files). About 30 Hz a degree; left alone in this room, at 28 to 29 degrees, it sits at about 3660 Hz.
 - **It is added in the receive chain, not received.** It stays a few hertz wide under a full-drive OFDM burst, where a beat with a second carrier would be smeared across kilohertz by the modulation, and it is gone when the radio mutes its audio tap during its own transmission.
 - **It is not the board, the supply or the programming lead.** It stayed with radio 19925328 when the boards were swapped, was the same on battery, and the same with the lead out.
-- A tone a few kilohertz up that moves 5 % for 6 degrees is most likely something much faster running free inside the radio and folding down, a switching regulator for instance, but that has not been looked for.
+- **It is in the receive path only.** That radio's own transmitted carrier, heard by the SDR, has no tone there (nothing over 1 Hz of deviation between 3 and 4.2 kHz, where the receive tone is 16 Hz).
+- **The likely source is the radio's two clocks beating.** Tait's service manual gives the receiver a 13.000 MHz temperature-compensated reference, a 13.012 MHz oscillator locked to it, and a separate 12.288 MHz system clock for the digital board, which samples the 64 kHz second IF and produces audio at 48 kHz. Those frequencies fold to exactly 4.000 kHz (13.012 MHz less 12.288 MHz is 724 kHz, which is fifteen times 48 kHz plus 4 kHz), and the result moves 12 Hz for every part per million the system clock is off. A plain crystal 8 to 40 ppm fast would put the tone at 3.5 to 3.9 kHz and move it with temperature, which is what all three radios do (the first sat at 3.88 to 4.05 kHz). This fits everything measured but has not been proved on the board.
+- **Tait have a setting aimed at this kind of thing.** The programming application has a per-channel "Activate Birdie Killer" option for "a hum or whistle on a channel caused by internal interference", and the service manual's block diagram shows a line of that name going to the system clock. It has not been tried here: the codeplug tool does not expose it yet. If it shifts the system clock it would move the tone, by 12 Hz per ppm, and might move it out of the band a modem uses.
 
 **What it costs.** Two or three carriers of an 8 kHz OFDM signal lose 10 to 16 dB and the rest are as good as the other radio's. Which carriers changes as the radio warms and cools: it wanders over about seventeen of them, and by less than one during a burst. A notch is the wrong cure (it costs more carriers than the tone does, and the tone moves). A modem that weights each carrier by the noise it actually shows loses about half a decibel of margin to it.
 
@@ -416,7 +420,7 @@ What the measurements above mean for a modem on this combination. Results for pa
 
 ## Open questions
 
-- **What inside the radio makes the receive tone** ([Receive tones](#receive-tones)). It is on every channel and follows the radio's temperature; the source has not been looked for.
+- **Whether Tait's "birdie killer" option moves the receive tone** ([Receive tones](#receive-tones)), which would also confirm that the system clock is its source.
 - **How the free-running capture clock behaves over hours**, and what moves it. It has been seen from 520 to 1930 ppm.
 - **A cleaner split of the locked clocks' wander** over long transmissions. The first one is under [Sample clock](#cm108b-sample-clock); it wants the SDR on a third computer, since on one of the Pis it disturbs that Pi's sound card. An antenna laid against the coax gives the SDR about 21 dB with no change to the path.
 - **12 dB SINAD sensitivity**, and with it how every figure here changes on a weak signal. It needs the RF level stepped with pads.
