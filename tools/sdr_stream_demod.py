@@ -4,14 +4,23 @@ touching the disk.
   rx_sdr -d driver=sdrplay -f 146440000 -s 192000 -g IFGR=50,RFGR=0 -F CF32 - | sdr_stream_demod.py CARRIER_HZ OUT.wav
 CARRIER_HZ is where the wanted carrier sits above the tuned frequency (the tuning offset plus the RSP1's own
 crystal error). OUT.wav is 48 kHz 16-bit, 20 kHz of deviation full scale. OUT.wav.json records the wall-clock time
-of the first sample and, every ten seconds, how many samples had arrived, so a dropped block shows as a step."""
+of the first sample and, every ten seconds, how many samples had arrived, so a dropped block shows as a step.
+With a third argument HOURLY the audio goes to OUT-000.wav, OUT-001.wav, ... an hour of input samples each (a WAV
+cannot hold a night), and the log's "files" says which input sample each one starts at."""
 import sys, time, json, wave
 import numpy as np
 FS = 192000; DEC = 4
 shift = float(sys.argv[1]); out = sys.argv[2]
 taps = 129; k = np.arange(taps) - taps // 2
 h = (np.sinc(2 * 16000 / FS * k) * 2 * 16000 / FS * np.hamming(taps)).astype(np.float32)
-w = wave.open(out, "wb"); w.setnchannels(1); w.setsampwidth(2); w.setframerate(FS // DEC)
+hourly = len(sys.argv) > 3 and sys.argv[3] == "HOURLY"
+stem = out[:-4] if out.endswith(".wav") else out
+files = []
+def opened(n):
+    name = f"{stem}-{len(files):03d}.wav" if hourly else out
+    f = wave.open(name, "wb"); f.setnchannels(1); f.setsampwidth(2); f.setframerate(FS // DEC)
+    files.append([name, n]); return f
+w = opened(0)
 tail = np.zeros(taps - 1, np.complex64); prev = np.complex64(1); n = 0; skip = 0; marks = []; t0 = None
 block = FS
 while True:
@@ -29,6 +38,8 @@ while True:
     n += len(x)
     if n // (10 * FS) > len(marks):
         marks.append([n, time.time()])
-        json.dump({"t0": t0, "fs": FS // DEC, "shift": shift, "marks": marks}, open(out + ".json", "w"))
+        json.dump({"t0": t0, "fs": FS // DEC, "shift": shift, "files": files, "marks": marks}, open(out + ".json", "w"))
+    if hourly and n // (3600 * FS) >= len(files):
+        w.close(); w = opened(n)
 w.close()
-json.dump({"t0": t0, "fs": FS // DEC, "shift": shift, "marks": marks, "samples_in": n}, open(out + ".json", "w"))
+json.dump({"t0": t0, "fs": FS // DEC, "shift": shift, "files": files, "marks": marks, "samples_in": n}, open(out + ".json", "w"))
