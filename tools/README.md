@@ -7,6 +7,7 @@ The scripts the factsheet's figures come from. They run from any machine that ca
 | `bench.sh` | control machine | Shell functions that drive both Pis. Source it. |
 | `gen.py` | Pi | Writes a test WAV: tone, bare carrier (silence), level ladder, frequency sweep or multitone. |
 | `play.py` | Pi | Keys the radio through the CM108 and plays a WAV. Always unkeys. |
+| `sdr_stream_demod.py` | SDR host | FM-demodulates the RSP1's IQ as it arrives (pipe `rx_sdr ... -F CF32 -` into it), so one recording can run through a whole session: 48 kHz audio and a log of sample counts against time. Give it where the carrier sits above the tuned frequency (72.55 kHz here: 60 kHz of tuning offset and the RSP1's own crystal error). |
 | `iqan.py` | radio1 | Reads an RSP1 capture: deviation ladder, deviation from sideband amplitudes, deviation of modem bursts. |
 | `wavan.py` | Pi | Reads a receive-audio recording: open-channel level, ladder levels and SINAD, noise floor under a carrier, and narrow tones under a carrier (`spurs`, which exits 1 if one stands more than 10 dB over the noise in 23.4 Hz). |
 | `clock.py` | radio1 | Playback and capture clock error and wander from one 1 kHz transmission. |

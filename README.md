@@ -43,7 +43,7 @@ What limits it:
 | Channel | 146.500 MHz, Very Low power (1 W), Wide (25 kHz) unless stated |
 | RF path | 112 dB of attenuation between the radios (5 W 6 dB pads at each radio, low-power pads between), about -80 dBm at each receiver |
 | Modem | pdn-soundmodem 0.108.0, one instance per radio |
-| Deviation measured with | SDRplay RSP1 with a small antenna laid against the coax (IFGR=50), FM-demodulated in software; cross-checked against the FM sideband amplitudes of a steady tone (agree within 0.2%) |
+| Deviation measured with | SDRplay RSP1 with a small antenna laid against the coax (IFGR=50), on a third computer since 18 Nov with the open [OpenRSP](https://openrsp.dev/) driver, FM-demodulated in software; cross-checked against the FM sideband amplitudes of a steady tone (agree within 0.2%) |
 
 Each board appears on USB as a hub carrying a CM108B sound card, a CP2102N "TaitInterface" serial port (the radio's internal serial port, IOP_TXD/RXD) and a CP2102N "TaitProgramming" port.
 
@@ -365,7 +365,13 @@ What that looks like from the far end, with the bit set on both boards, measured
 - **Inside a transmission the timing zig-zags** by 20 to 60 microseconds, the rate stepping by 200 to 500 ppm for tens of milliseconds at a time, with occasional jumps of about one sample. Longer bursts hold more of it: median wander 10 microseconds under 0.7 s, 22 at 1 s, 46 at 1.8 s.
 - **It comes and goes.** The spread from one key-up to the next was 25 to 39 ppm for an hour and then about 70 ppm in one direction with nothing changed.
 - **Starting the playback stream early does not calm it** (1.5 s of silence before the audio: no difference).
-- **Both cards take part, differently.** With an SDR beside the radios as a third clock (18 Nov, twelve key-ups of 0.6 s): inside a short burst it is mostly the sending card's playback clock that moves (2 to 12 microseconds, typically 10) and the receiving card's capture clock adds 2 to 4. From one key-up to the next both rates move, each over about 50 ppm. Over a 7 s transmission the capture clock is the larger part: 44 microseconds against 22 for playback in the one clean pair. (The other direction read 260 microseconds of capture wander, but that card shares its Pi's USB bus with the SDR, which is very likely what disturbed it.)
+- **Both cards take part, differently.** Measured with an SDR on a third computer as an independent clock, recording continuously through 48 transmissions (18 Nov):
+  - **Inside a short burst (0.6 s) it is the sending card's playback clock that moves**: 10 microseconds peak to peak (3 to 13), against 3 for the receiving card's capture clock (2 to 11).
+  - **From one key-up to the next it is mostly the capture clock**: its rate spreads by 30 to 38 ppm, playback's by 15 to 18.
+  - **Playback starts fast.** Over the first 0.6 s of a key-up it runs about 60 ppm faster than it settles to.
+  - **Over a 7 s transmission both move, capture more and more steadily**: 44 microseconds peak to peak (42 to 49) and 12 rms for capture, 36 (20 to 68) and 7 rms for playback.
+  - **Now and then the playback clock swings by 300 to 500 microseconds** within one transmission: 3 of 12 long transmissions, two of them the first after the cards had been idle. The capture clock did not join in.
+  - The SDR must not share a computer with either sound card. On one of the Pis it took that Pi's capture clock from 44 to 260 microseconds of wander.
 
 40 microseconds is 2 radians of phase at 8 kHz, and a rate that is 100 ppm out slides a 43 ms OFDM symbol through its own window. Single-carrier modems track all of this without noticing.
 
@@ -422,7 +428,7 @@ What the measurements above mean for a modem on this combination. Results for pa
 
 - **Whether Tait's "birdie killer" option moves the receive tone** ([Receive tones](#receive-tones)), which would also confirm that the system clock is its source.
 - **How the free-running capture clock behaves over hours**, and what moves it. It has been seen from 520 to 1930 ppm.
-- **A cleaner split of the locked clocks' wander** over long transmissions. The first one is under [Sample clock](#cm108b-sample-clock); it wants the SDR on a third computer, since on one of the Pis it disturbs that Pi's sound card. An antenna laid against the coax gives the SDR about 21 dB with no change to the path.
+- **Why the playback clock sometimes swings by hundreds of microseconds**, and whether keeping the playback stream open between transmissions prevents it.
 - **12 dB SINAD sensitivity**, and with it how every figure here changes on a weak signal. It needs the RF level stepped with pads.
 - Clock offsets between other computers.
 - The receive response and signal quality on Narrow, and the burst deviation after R11 = 2k0, have not been measured directly.
