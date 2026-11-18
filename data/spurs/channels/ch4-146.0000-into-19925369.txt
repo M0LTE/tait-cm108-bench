@@ -1,0 +1,7 @@
+11.9 s of quiet carrier; noise -109.4 dBFS/Hz at 1 to 3 kHz, -105.7 at 3 to 5 kHz
+   1086.7 Hz   -94.7 dBFS   +0.1 dB over the noise in 23.4 Hz  about 1.1 Hz of deviation  7 Hz wide  not a multiple of 1 kHz: made in the radio
+   1212.1 Hz   -86.7 dBFS   +8.6 dB over the noise in 23.4 Hz  about 2.8 Hz of deviation  16 Hz wide  not a multiple of 1 kHz: made in the radio
+   3614.7 Hz   -91.0 dBFS   +1.5 dB over the noise in 23.4 Hz  about 1.7 Hz of deviation  14 Hz wide  not a multiple of 1 kHz: made in the radio
+   3630.2 Hz   -88.2 dBFS   +4.0 dB over the noise in 23.4 Hz  about 2.3 Hz of deviation  17 Hz wide  not a multiple of 1 kHz: made in the radio
+   3999.4 Hz   -89.5 dBFS   +2.6 dB over the noise in 23.4 Hz  about 2.0 Hz of deviation  7 Hz wide  a multiple of 1 kHz: USB frame-rate pickup on the board
+PASS

@@ -91,7 +91,7 @@ def spurs(fn, limit=10.0, dev_1k_dbfs=-35.6):
         if near < 0.004 * hz + 3:
             kind = "a multiple of 1 kHz: USB frame-rate pickup on the board"
         else:
-            kind = f"as a second carrier {hz / 1000:.2f} kHz off channel it would be {20 * np.log10(dev / hz):.0f} dBc"
+            kind = "not a multiple of 1 kHz: made in the radio"
             if worst is None or in_carrier > worst: worst = in_carrier
         print(f"  {hz:7.1f} Hz  {level:6.1f} dBFS  {in_carrier:+5.1f} dB over the noise in 23.4 Hz  about {dev:.1f} Hz of deviation  {width:.0f} Hz wide  {kind}")
     if not groups: print("  no tone stands 6 dB clear of the noise")

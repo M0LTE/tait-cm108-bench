@@ -8,7 +8,7 @@ What a bench of two Tait TM8110 radios with the [packethacking/tait-cm108](https
 2. **Fit R11 = 2k0 (not 3k3).** With the transmit tap on T12, the as-built divider limits full-scale deviation to 62% of the channel maximum; 2k0 gives 88 to 90%. On the densest ofdm-fm preset that doubled the frames delivered. See [Output level: R11](#output-level-r11).
 3. **Use R2 and T12.** Both are levelled by the radio to the channel width, so one set of levels serves Narrow and Wide.
 4. Otherwise the board works as built: linear, two boards matched within 0.4 dB, audio flat from 30 Hz to about 5 kHz.
-5. **Check each receiver for a tone under a quiet carrier.** On this channel one radio position has a tone near 4 kHz in its receive audio, 22 dB over the noise in a narrow band. It costs a wide OFDM signal two or three carriers and nothing else. There is a one-line test. See [Receive tones](#receive-tones).
+5. **Check each receiver for a tone under a quiet carrier.** These radios add a narrow tone to their own receive audio, on every channel, at a frequency that follows the radio's temperature: 21 dB over the noise near 3.7 kHz on one unit, 9 dB near 1.2 kHz on another. It costs a wide OFDM signal two or three carriers and nothing else. There is a one-line test. See [Receive tones](#receive-tones).
 
 ## Verdict
 
@@ -38,7 +38,7 @@ What limits it:
 
 | | |
 |---|---|
-| Radios | Tait TM8110 (TMAB12-B100), firmware 2.18 and 2.19, codeplug databases 0094 and 0095 |
+| Radios | Tait TM8110 (TMAB12-B100), serials 19925369 and 19924394, firmware 2.18, codeplug database 0094 |
 | Interface | tait-cm108 board on each radio's internal options connector, USB to a Raspberry Pi 4, one Pi per radio |
 | Channel | 146.500 MHz, Very Low power (1 W), Wide (25 kHz) unless stated |
 | RF path | 112 dB of attenuation between the radios (5 W 6 dB pads at each radio, low-power pads between), about -80 dBm at each receiver |
@@ -81,6 +81,8 @@ Tap points, from Tait's diagram and confirmed by measurement:
 - Codeplug programming only works through the **front panel mic socket** with a programming lead. The internal options connector has one serial pair and no programming lines, and the radio never gives the programming handshake on it. The board's "TaitProgramming" port does not respond.
 - When the data port is not Mic, the mic socket programs without a power-cycle.
 - The internal port obeys the CCDI `^` (reset) character. A tool that retries `^` while waiting for a programming banner holds the radio in a reboot loop.
+- **Channels can be changed without the lead.** Program several channels once, then CCDI `g` on the internal port selects one: `g1` to `g9` were accepted here and `g10` was not, on a ten-channel codeplug. The bench radios hold nine extra simplex channels between 146.000 and 146.550 MHz, all Wide and Very Low, with 146.500 MHz still channel 1.
+- **The radio reports its PA temperature** over CCDI: CCTM query 47 (`q` with parameter `5047`) answers in degrees C and then in millivolts. 27 to 29 degrees idle here, 33 after 100 s of transmitting at 1 W.
 - A radio from elsewhere can arrive on any channel at High power. Program Very Low and the bench channel before it is ever keyed into a pad chain.
 - tait-codeplug: `patch <port> profile` crashes in 0.15.x; it is fixed on main ([#24](https://github.com/M0LTE/tait-codeplug/pull/24)), which also adds `write <port> <file>` for writing a prepared codeplug in one go ([#25](https://github.com/M0LTE/tait-codeplug/pull/25)), not yet in a release.
 
@@ -284,19 +286,23 @@ Quality falls about 15 dB across the band, and above 1 kHz lower drive is cleane
 
 ## Receive tones
 
-**One radio position has a tone near 4 kHz in its receive audio whenever it hears a carrier.** It is not in the other radio's transmission (checked with the RSP1), not on battery or mains, not the programming lead and not the board.
+**These radios put a narrow tone into their own receive audio, and its frequency follows the radio's temperature.** It shows whenever a carrier quiets the receiver. One of the three radios tried has it strongly, one had it more strongly still, and the third has weaker ones.
 
-| When | Radio in that position | Tone | Level |
-|---|---|---|---|
-| 15 Nov | 19925328 | 3882 to 3902 Hz, drifting | 26 dB over the noise around it, about 9 Hz of deviation |
-| 17 Nov | 19925328, after the boards swapped radios | 4.05 kHz | 23 dB |
-| 17 to 18 Nov | 19924394 (its replacement) | 3661 Hz when the far transmitter is cold, 3770 to 3920 Hz once it has been keying for some minutes | 22 dB over the noise in 23.4 Hz, about 16 Hz of deviation |
-| 18 Nov | 19925369 (the other position) | none; a faint one at 990 Hz | 6 dB |
+| Radio | Tone | Level |
+|---|---|---|
+| 19925328 (since replaced) | 3.88 to 4.05 kHz | 23 to 26 dB over the noise around it |
+| 19924394 | 3.5 to 3.9 kHz | 21 to 22 dB over the noise in 23.4 Hz, about 16 Hz of deviation |
+| 19925369 | about 1.2 kHz, and about 3.6 kHz | 7 to 9 dB, and 2 to 5 dB |
 
-- **It is a beat, not an audio tone.** It moves by hundreds of hertz with temperature, where anything made at audio frequency would stay put. So the receiver is hearing a second, very weak carrier about 4 kHz from the wanted one, and the tone is the difference between them. 16 Hz of deviation at 3.66 kHz makes that carrier 47 dB below the wanted one: about -127 dBm, far below anything a voice user would notice.
-- **Where the second carrier comes from is not established**, but two different radios in that position have both put it within 350 Hz of 4.000 kHz, and that is a strong hint. 146.500 MHz is exactly 4 kHz above a multiple of 8, 16, 32 and 48 kHz (146.496 MHz), so a harmonic of any clock at one of those rates lands there, and to stay within 350 Hz at 146 MHz that clock must be good to about 2 ppm. The radio's own reference is; the Pi's USB clock (130 ppm low) and the sound card's clocks are not, and would put the beat tens of kilohertz away. That points at a clock inside the radio, which would make this a property of the TM8110 on this channel and not a faulty unit. The test that would settle it is one channel step: at 146.5125 MHz a comb of 8 kHz harmonics puts the tone near 500 Hz, a comb of 48 kHz harmonics puts it out of the passband, and a fixed outside signal goes the same way.
-- **It does not spread under modulation.** With a full-drive OFDM burst on the channel it still takes out two or three carriers of 333 (10 to 16 dB each) and leaves the rest as good as the other radio's.
-- **A notch is the wrong cure** (it costs more carriers than the tone does). A modem that weights each carrier by the noise it actually shows loses about half a decibel of margin to it.
+What is established, on 19924394:
+
+- **It is the same on every channel.** Nine channels from 146.000 to 146.550 MHz, including ones chosen to move or remove it if it were a clock harmonic landing near the channel: the tone was there on all of them at 21 dB, between 3510 and 3867 Hz ([data/spurs/channels/](data/spurs/channels/)). Changing channel does not avoid it.
+- **Its frequency is the radio's own temperature.** Idle, with the PA sensor at 27 degrees: 3604 Hz, creeping down 17 Hz in 100 s. Straight after that radio had transmitted for 100 s (sensor 33 degrees): 3783 Hz, sliding back to 3693 Hz over the next 100 s ([data/spurs/](data/spurs/), the two `track` files). About 30 Hz a degree; left alone in this room, at 28 to 29 degrees, it sits at about 3660 Hz.
+- **It is added in the receive chain, not received.** It stays a few hertz wide under a full-drive OFDM burst, where a beat with a second carrier would be smeared across kilohertz by the modulation, and it is gone when the radio mutes its audio tap during its own transmission.
+- **It is not the board, the supply or the programming lead.** It stayed with radio 19925328 when the boards were swapped, was the same on battery, and the same with the lead out.
+- A tone a few kilohertz up that moves 5 % for 6 degrees is most likely something much faster running free inside the radio and folding down, a switching regulator for instance, but that has not been looked for.
+
+**What it costs.** Two or three carriers of an 8 kHz OFDM signal lose 10 to 16 dB and the rest are as good as the other radio's. Which carriers changes as the radio warms and cools: it wanders over about seventeen of them, and by less than one during a burst. A notch is the wrong cure (it costs more carriers than the tone does, and the tone moves). A modem that weights each carrier by the noise it actually shows loses about half a decibel of margin to it.
 
 **The test.** Key the far radio with no audio for 14 s, record the near radio's receive audio, and list every narrow tone that stands clear of the noise ([tools/wavan.py](tools/wavan.py) `spurs`, [tools/bench.sh](tools/bench.sh) `quiet`):
 
@@ -309,12 +315,12 @@ ssh pi@radio2 'cd tait-pair && python3 wavan.py spurs q-top.wav'
 ```
 14.2 s of quiet carrier; noise -109.9 dBFS/Hz at 1 to 3 kHz, -106.0 at 3 to 5 kHz
     993.8 Hz   -93.4 dBFS   +1.6 dB over the noise in 23.4 Hz  about 1.3 Hz of deviation  9 Hz wide  a multiple of 1 kHz: USB frame-rate pickup on the board
-   3663.6 Hz   -71.3 dBFS  +21.8 dB over the noise in 23.4 Hz  about 16.5 Hz of deviation  6 Hz wide  as a second carrier 3.66 kHz off channel it would be -47 dBc
+   3663.6 Hz   -71.3 dBFS  +21.8 dB over the noise in 23.4 Hz  about 16.5 Hz of deviation  6 Hz wide  not a multiple of 1 kHz: made in the radio
    3999.4 Hz   -88.2 dBFS   +4.0 dB over the noise in 23.4 Hz  about 2.3 Hz of deviation  6 Hz wide  a multiple of 1 kHz: USB frame-rate pickup on the board
 FAIL: a tone that is not the USB frame rate stands 21.8 dB over the noise in one carrier (limit 10)
 ```
 
-It reports each tone's frequency, its level, how far it stands over the noise in 23.4 Hz (the width of one `ofdm-fm` carrier, so the figure is roughly what that carrier loses), and the deviation it amounts to. Tones at multiples of 1 kHz are the USB frame rate picked up on the board; they are small and are not counted. It exits 1 if anything else stands more than 10 dB clear. Both of today's results are in [data/spurs/](data/spurs/). Run it in both directions on any new pair, and again after moving channel.
+It reports each tone's frequency, its level, how far it stands over the noise in 23.4 Hz (the width of one `ofdm-fm` carrier, so the figure is roughly what that carrier loses), and the deviation it amounts to. Tones at multiples of 1 kHz are the USB frame rate picked up on the board; they are small and are not counted. It exits 1 if anything else stands more than 10 dB clear. Both radios' results are in [data/spurs/](data/spurs/). Run it in both directions on any new pair, with the radios both idle and warm, since the tone moves. [tools/tonetrack.py](tools/tonetrack.py) follows one tone second by second.
 
 ## CM108B sample clock
 
@@ -410,7 +416,7 @@ What the measurements above mean for a modem on this combination. Results for pa
 
 ## Open questions
 
-- **Where the receive tone comes from** ([Receive tones](#receive-tones)). One channel step would say whether it is a clock inside the radio.
+- **What inside the radio makes the receive tone** ([Receive tones](#receive-tones)). It is on every channel and follows the radio's temperature; the source has not been looked for.
 - **How the free-running capture clock behaves over hours**, and what moves it. It has been seen from 520 to 1930 ppm.
 - **The split of the locked clocks' wander** between the sending card's playback and the receiving card's capture. An SDR listening off air gives it; on a tee it costs path, so couple it loosely instead.
 - **12 dB SINAD sensitivity**, and with it how every figure here changes on a weak signal. It needs the RF level stepped with pads.
