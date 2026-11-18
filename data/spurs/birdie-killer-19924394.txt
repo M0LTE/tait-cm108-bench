@@ -1,0 +1,13 @@
+Radio 19924394, 18 Nov 2026 about 22:00 UTC, PA sensor 29 C throughout. Strongest tone in the receive audio under
+a bare carrier, 12 s each, in the order taken. "Bits" are the first two bits of the channel's record in the codeplug.
+
+channel 1 (146.5000)  bits 1, as the radio has always been            3694 Hz
+channel 2 (146.5125)  bits 3, Activate Birdie Killer ticked           3735 Hz
+channel 3 (146.4875)  bits 0, Activate Birdie Killer unticked         4002 Hz
+channel 1             bits 1                                          3744 Hz
+channel 2             bits 3                                          3760 Hz
+channel 3             bits 0                                          4017 Hz
+
+The tone was drifting upward by 15 to 50 Hz between readings (the radio had just restarted after programming), so
+channels 1 and 2 are the same within that drift and channel 3 is about 255 Hz above both. Before this test the tone
+had been the same on all three channels (data/spurs/channels/).
