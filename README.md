@@ -4,7 +4,7 @@ What a bench of two Tait TM8110 radios with the [packethacking/tait-cm108](https
 
 **Headline:**
 
-1. **Set the CM108B's "MIC PLL Adjust" EEPROM bit on every board.** As shipped, its capture clock is not locked to anything: it has been seen from 520 to 1930 ppm away from its playback clock on the same two boards, and it moves by hundreds of ppm in minutes. Tones and AFSK do not notice; anything that assumes the two ends sample at the same rate does. One EEPROM word locks it. See [Sample clock](#cm108b-sample-clock).
+1. **Set the CM108B's "MIC PLL Adjust" EEPROM bit on every board.** As shipped, its capture clock is not locked to anything: it ran 1700 to 1840 ppm fast on these two boards through one night and about 370 ppm fast on the same boards four days earlier. Tones and AFSK do not notice; anything that assumes the two ends sample at the same rate does. One EEPROM word locks it. See [Sample clock](#cm108b-sample-clock).
 2. **Fit R11 = 2k0 (not 3k3).** With the transmit tap on T12, the as-built divider limits full-scale deviation to 62% of the channel maximum; 2k0 gives 88 to 90%. On the densest ofdm-fm preset that doubled the frames delivered. See [Output level: R11](#output-level-r11).
 3. **Use R2 and T12.** Both are levelled by the radio to the channel width, so one set of levels serves Narrow and Wide.
 4. Otherwise the board works as built: linear, two boards matched within 0.4 dB, audio flat from 30 Hz to about 5 kHz.
@@ -24,7 +24,7 @@ What is good:
 
 What needed fixing (both are cheap):
 
-- **Capture clock**: as shipped it runs free, 520 to 1930 ppm away from playback and moving. One EEPROM bit locks it to USB timing, and boards should ship with it set.
+- **Capture clock**: as shipped it runs free, anything from 370 to 1840 ppm fast. One EEPROM bit locks it to USB timing, and boards should ship with it set.
 - **Output level**: 62% of the maximum deviation on T12 as built. R11 = 2k0 brings it to 88 to 90%, which doubled delivery on the hardest ofdm-fm preset.
 
 What limits it:
@@ -343,25 +343,23 @@ The CM108B has no crystal. It plays back locked to the host's USB timing; what i
 |---|---|---|---|
 | Rate against a 1 ppm reference, 15 Nov | the host's USB clock (-130 and -135 ppm on two Pi 4s) | +353 to +393 ppm | the host's USB clock, within about 10 ppm |
 
-**As shipped, the capture clock is not a fixed offset. It coasts, and it moves.** The mismatch between two of these boards (one playing, one capturing), same two boards throughout:
+**As shipped, the capture clock runs free and fast, and how fast is not a constant.** Against an independent reference (an SDR on a third computer), every ten minutes through a ten-hour night with the bit clear on both boards (18 to 19 Nov, [data/clock/](data/clock/)):
 
-| When | Mismatch |
-|---|---|
-| 15 Nov | about 520 ppm |
-| 18 Nov, 3 minutes after a power cycle | 1890 ppm |
-| 13 minutes after | 1690 ppm |
-| 80 minutes after, with a lot of transmitting | 1550 ppm |
-| 18 Nov, a second power cycle: 30 s after | 1460 ppm |
-| 1.5 to 4.5 minutes after | 1670 to 1800 ppm |
-| straight after 30 s of carrier each way | 1410 to 1470 ppm |
+| | Board 20000002 | Board 20000005 |
+|---|---|---|
+| Capture clock, range over the night | +1690 to +1790 ppm | +1735 to +1835 ppm |
+| Standard deviation over the night | 22 ppm | 21 ppm |
 
-So budget for anything up to about 2000 ppm, and for it to shift by 300 ppm in a minute. Measured over two-minute stretches it is steadier than the locked clock (the rate from one key-up to the next spreads by 12 to 31 ppm against 25 to 39), and it wanders less inside a burst (nine bursts in ten under 13 microseconds against 20 to 31).
+- **Through one night it is steady**, steadier than the locked clock: no drift over ten hours beyond a band of 100 ppm, the three key-ups of one reading within 15 ppm of each other, and nothing that followed the room (22.5 to 23 degrees) or the radios' PA temperature (29 to 32).
+- **From one week to the next it is not.** On 15 Nov the same two boards measured +353 to +393 ppm, with EEPROM contents identical word for word. In between they were out of the radios for the R11 change and moved to a Pi each. What sets the free-running rate is not known, so budget for anything up to about 2000 ppm.
+- **The mismatch a modem sees between two such boards was 1840 to 2025 ppm** through the night: the capture clock's offset plus the playback clock's.
+- **Readings that jump by hundreds of ppm are the playback clock, not this one.** Playback is locked to USB whatever the bit says, and it starts each key-up unsettled (see below). Readings of 1410 to 1690 ppm taken on 18 Nov straight after a power cycle or after a long transmission were playback: 30 s after power-up it read 130 ppm slow where it settles 190 fast, and after a card had played 70 s of carrier its next key-ups started 250 ppm low.
 
 - **The fix:** EEPROM word **0x2B from 7A02 to 7A12** (bit 4, "MIC PLL Adjust"). The capture clock then follows the USB timing, and the mismatch between two stations is the difference between their hosts' USB clocks.
 - It takes effect only after the board is power-cycled (unplug and replug, or `uhubctl` as under [Test setup](#test-setup)). A USB reset is not enough.
 - **Give a board a minute after power-up.** The first three key-ups after a power cycle with the bit set read -674, -190 and -76 ppm.
 
-**Locked, it trades a large moving error for a small one that moves faster.** Worst timing excursion within any 1.5 s, after removing that stretch's own average rate:
+**Locked, it trades a large steady error for a small one that hunts.** Worst timing excursion within any 1.5 s, after removing that stretch's own average rate:
 
 | | As shipped | MIC PLL Adjust on |
 |---|---|---|
@@ -377,7 +375,7 @@ What that looks like from the far end, with the bit set on both boards, measured
 - **Both cards take part, differently.** Measured with an SDR on a third computer as an independent clock, recording continuously through 48 transmissions (18 Nov):
   - **Inside a short burst (0.6 s) it is the sending card's playback clock that moves**: 10 microseconds peak to peak (3 to 13), against 3 for the receiving card's capture clock (2 to 11).
   - **From one key-up to the next it is mostly the capture clock**: its rate spreads by 30 to 38 ppm, playback's by 15 to 18.
-  - **Playback starts fast.** Over the first 0.6 s of a key-up it runs about 60 ppm faster than it settles to.
+  - **Playback starts unsettled.** Over the first 0.6 s of a key-up it typically runs about 60 ppm faster than it settles to, and across 345 key-ups through a night it started anywhere from 130 ppm slow to 420 ppm fast (the three key-ups of one reading differed by 33 ppm typically, by more than 160 one time in ten). It is worst just after power-up and after a long playback. This is the same with the bit set or clear.
   - **Over a 7 s transmission both move, capture more and more steadily**: 44 microseconds peak to peak (42 to 49) and 12 rms for capture, 36 (20 to 68) and 7 rms for playback.
   - **Now and then the playback clock swings by 300 to 500 microseconds** within one transmission: 3 of 12 long transmissions, two of them the first after the cards had been idle. The capture clock did not join in.
   - The SDR must not share a computer with either sound card. On one of the Pis it took that Pi's capture clock from 44 to 260 microseconds of wander.
@@ -436,7 +434,7 @@ What the measurements above mean for a modem on this combination. Results for pa
 ## Open questions
 
 - **Whether the receive tone can be moved out of the band**, for instance by more pull on the system clock than the birdie killer gives. Nothing in the documents suggests a way.
-- **How the free-running capture clock behaves over hours**, and what moves it. It has been seen from 520 to 1930 ppm.
+- **What sets the free-running capture clock's rate.** It held within 100 ppm through a night and differed by 1400 ppm between two weeks on the same boards.
 - **Why the playback clock sometimes swings by hundreds of microseconds**, and whether keeping the playback stream open between transmissions prevents it.
 - **12 dB SINAD sensitivity**, and with it how every figure here changes on a weak signal. It needs the RF level stepped with pads.
 - Clock offsets between other computers.
