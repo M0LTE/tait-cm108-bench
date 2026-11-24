@@ -30,6 +30,7 @@ What needed fixing (both are cheap):
 What limits it:
 
 - **The CM108B has no crystal.** Even locked, its clocks hunt: from one key-up to the next the rate between two boards is anywhere within about 300 ppm of nominal, and inside a transmission it steps by hundreds of ppm for tens of milliseconds at a time. Every single-carrier mode copes. A wide OFDM modem has to measure the clock from each burst and follow it; one that does loses nothing to it. A crystal-referenced codec would avoid the issue altogether.
+- **A board left with no stream open loses its place.** Its first playback afterwards runs 300 to 850 ppm slow for about a second. Keeping capture or playback open prevents it, so a modem that holds the card for as long as it runs never sees it.
 - **The radio's receiver distortion.** SINAD tops out at about 37 to 40 dB, and above 30 to 40% of the maximum deviation the receiver's own distortion is the limit. That is typical of a good analogue FM radio and far more than AFSK, 9600 or C4FSK need, but it is the ceiling for dense OFDM.
 - **Narrow channels.** About 4 kHz of usable audio on Narrow rules out the wide OFDM presets on 12.5 kHz channels. That is the radio's IF filter, not the interface.
 - **Minor**: the board's second serial port ("TaitProgramming") does nothing, programming still needs a lead in the mic socket, and on the bench one board's sound card dropped off USB once in about 14 hours of use.
@@ -378,14 +379,46 @@ What that looks like from the far end, with the bit set on both boards, measured
   - **From one key-up to the next it is mostly the capture clock**: its rate spreads by 30 to 38 ppm, playback's by 15 to 18.
   - **Playback starts unsettled.** Over the first 0.6 s of a key-up it typically runs about 60 ppm faster than it settles to, and across 345 key-ups through a night it started anywhere from 130 ppm slow to 420 ppm fast (the three key-ups of one reading differed by 33 ppm typically, by more than 160 one time in ten). It is worst just after power-up and after a long playback. This is the same with the bit set or clear.
   - **Over a 7 s transmission both move, capture more and more steadily**: 44 microseconds peak to peak (42 to 49) and 12 rms for capture, 36 (20 to 68) and 7 rms for playback.
-  - **Now and then the playback clock swings by 300 to 500 microseconds** within one transmission: 3 of 12 long transmissions, two of them the first after the cards had been idle. The capture clock did not join in.
-  - **It is a card with no stream at all that swings, and any stream running prevents it** (24 Nov). After 270 s of playback, the playback device closed and reopened two minutes later: with the capture stream left running through the pause the first burst was 16 to 132 ppm out on one board and -4 to 103 on the other (0 of 12 beyond 300); with no stream of either kind through the pause it was -315 to -850 ppm (12 of 12 beyond 300), even when capture had been restarted 15 s earlier. A daemon that keeps capture open, as pdn-soundmodem does, is therefore not exposed in normal running. The first measurement of this, below, kept playback running, which works for the same reason. **Keeping the playback stream open prevents the swing** (23 Nov, six hours, 120 rounds, both boards). When a card's playback stream had run for some minutes, been closed for about two, and was then opened for a 0.7 s burst, that burst ran 300 to 850 ppm slow against the far card in 112 of 120 cases (medians -398 and -572 ppm on the two boards, 240 to 350 microseconds across the burst). With the stream left running and playing silence through the same two minutes, it did so in 5 of 120 (medians +13 and +8 ppm). The second and later bursts of a train were ordinary either way. After playback that had only ever run for a second at a time the swing is rarer: over 240 rounds through a night, never on one board and in 8 to 33% of rounds on the other, in spells of up to an hour.
-  - **A stream that is kept running need not cost much at key-up** (24 Nov). Audio written to a running stream starts behind whatever silence is queued, but `snd_pcm_rewind` takes back what has not yet gone to the card. About 12 ms (10 to 15) is already with the USB driver and cannot come back. The amount to rewind has to come from `snd_pcm_avail` (buffer size minus avail, less a guard): `snd_pcm_rewindable` works from a copy of the driver's position that can be 6 ms old, and rewinding by it underran one burst in ten. The driver takes its audio in pieces of as many 1 ms packets as fit a period, six at most, so the guard has to be more than one piece. With a 1 ms period and a 3 ms guard, 14 to 15 ms of silence is left ahead of the audio, the same to within 1 ms at every key-up; with a 10 ms period and a 7 ms guard, 17 to 22 ms. Over 1,440 bursts sent that way on the two boards there was no underrun, and none of the 60 first bursts after a two minute pause was more than 100 ppm out, where 59 of 60 were more than 300 ppm out when the stream was closed and reopened.
+  - **Now and then the playback clock swings by 300 to 500 microseconds** within one transmission: 3 of 12 long transmissions, two of them the first after the cards had been idle. The capture clock did not join in. What sets this off was found later: see [A card left idle](#a-card-left-idle-starts-its-next-playback-hundreds-of-ppm-slow) below.
   - The SDR must not share a computer with either sound card. On one of the Pis it took that Pi's capture clock from 44 to 260 microseconds of wander.
 
 40 microseconds is 2 radians of phase at 8 kHz, and a rate that is 100 ppm out slides a 43 ms OFDM symbol through its own window. Single-carrier modems track all of this without noticing.
 
 **Between different computers**, the locked mismatch adds the difference between their USB clocks. Two Pi 4s here were 3 to 15 ppm apart, which is luck; 100 to 200 ppm is ordinary.
+
+### A card left idle starts its next playback hundreds of ppm slow
+
+**If a board has had no stream of either kind open, its first playback afterwards runs 300 to 850 ppm slow for about a second. Any stream left open prevents it.** Measured 23 and 24 Nov on both boards, MIC PLL Adjust on, by comparing bursts received at the far board with the samples that were played.
+
+The test that isolates it (24 Nov, 12 rounds): 270 s of playback, the playback device closed, a 120 s pause, the device opened again and a 0.7 s burst sent. The only difference between the two columns is the board's own capture stream.
+
+| First burst after the pause | Capture left running through the pause | No stream of either kind through the pause |
+|---|---|---|
+| Board 20000005 | +16 to +132 ppm, median +59 | -315 to -670 ppm, median -434 |
+| Board 20000002 | -4 to +103 ppm, median +11 | -609 to -850 ppm, median -665 |
+| More than 300 ppm out | 0 of 12 | 12 of 12 |
+
+- **A swung burst is slow, by 240 to 350 microseconds across 0.7 s**, and its correlation with what was sent falls from 0.95 to about 0.6 to 0.75. The burst after it is about 100 ppm slow and the one after that is ordinary.
+- **Starting capture again before the burst does not help.** In the idle column capture had been restarted 5 s before the burst on one board and 15 s before on the other, and both swung. It is the first playback after the idle spell that suffers.
+- **Either stream is enough to prevent it.** Capture left running: the table above. Playback left running and playing silence, with capture stopped and restarted in between (23 Nov, 120 rounds over six hours, and again 24 Nov, 60 rounds): 5 of 120 and 0 of 60 first bursts beyond 300 ppm, against 112 of 120 and 59 of 60 when nothing was left open.
+- **It takes some playback beforehand.** With minutes of continuous playback before the idle spell it happened nearly every time. Through a night of 240 rounds in which a board only ever played for a second at a time, with about 100 s idle between rounds, it never happened on one board and happened in 8 to 33% of rounds on the other, in spells of up to an hour. How much playback and how long an idle spell it takes has not been mapped.
+- **What it is not.** Not the radio (keeping the receiving station busy transmitting for 20 s beforehand made no difference: 15 bursts lost of 320 either way). Not the MIC PLL Adjust bit (the 18 Nov measurements saw the same swings with it set or clear). Not closing and reopening the playback device as such (with capture running that is harmless: 0 of 32 across two trials).
+- **A modem that keeps its capture stream open for as long as it runs is not exposed.** pdn-soundmodem does, and run as the real daemon its first frame after a 40 s transfer and a 150 s pause was never more than 200 ppm out (10 rounds). A test harness that starts a recorder for each run and stops it afterwards is exposed, which is how this was found.
+
+### Keeping playback running, and what it costs at key-up
+
+A playback stream that never stops has silence queued in it, and audio written to it starts behind that silence. Measured 23 and 24 Nov through libasound on the `hw:` device, 48 kHz stereo, 120 ms buffer, with 60 ms of silence kept queued:
+
+- **Without doing anything about it, a transmission starts 45 to 60 ms late.**
+- **`snd_pcm_rewind` takes back the silence that has not yet gone to the card**, and the transmission is written in its place. It took back 33 to 45 ms.
+- **About 12 ms (10 to 15) is already with the USB driver and cannot come back** at any period or buffer setting tried. That is the floor for a running stream on this card.
+- **Size the rewind from `snd_pcm_avail`, not `snd_pcm_rewindable`.** What is in the ring is the buffer size minus avail. `snd_pcm_rewindable` works from a copy of the driver's position that can be 6 ms old, and `snd_pcm_delay` does not refresh it; rewinding by it went too far and one burst in ten underran inside the transmission.
+- **Leave a guard in the ring, more than one of the driver's pieces.** The driver takes audio in pieces of as many 1 ms packets as fit a period, six at most, whenever its last piece completes, which can be between the rewind and the first write. Guard = the smaller of 6 ms and the period, plus 2 ms.
+- **A 1 ms period gives the least and the steadiest**: 14 to 15 ms of silence left ahead of the audio, the same to within 1 ms at every key-up. A 10 ms period leaves 17 to 22 ms and a 30 ms period 24 to 26.
+- **Proven over 1,440 bursts on two boards** (24 Nov): no underrun inside a transmission, none while idle, and 14 or 15 ms ahead every time.
+- **End of a transmission without stopping the stream**: wait until frames written minus `snd_pcm_delay` passes the last transmitted frame, with silence going in behind it. No drain, no prepare.
+
+pdn-soundmodem's own figures for this, with the daemon as built, are in [pdn-soundmodem #828](https://github.com/packet-net/pdn-soundmodem/issues/828).
 
 ## CM108B EEPROM
 
@@ -428,7 +461,8 @@ The output path is CM108B line out, C29, a divider of R11 (series) and R12 (shun
 What the measurements above mean for a modem on this combination. Results for particular modems live with those modems.
 
 - **Tones, AFSK, 9600 and C4FSK** need nothing special: the audio path is flat and nearly DC-coupled, turnaround is a few milliseconds, and their timing recovery rides over the sound cards' clocks.
-- **Never leave the card with no stream open.** A CM108B that has had neither capture nor playback running starts its next playback hundreds of ppm slow; capture left running is enough to prevent it. If playback is also kept running, playing silence, take the queued silence back at key-up with `snd_pcm_rewind` sized from `snd_pcm_avail` (see [Sample clock](#cm108b-sample-clock)): about 15 ms from key-up to audio is then the least this card allows. A stream reopened after a long playback and a pause starts hundreds of ppm slow, which no receiver built for tens of ppm will follow.
+- **Never leave the card with no stream open.** A board that has had neither capture nor playback running starts its next playback hundreds of ppm slow, which no receiver built for tens of ppm will follow. Capture left running is enough.
+- **If playback is kept running too**, for a fixed and known delay from writing audio to it leaving the card, take the queued silence back at key-up with `snd_pcm_rewind` sized from `snd_pcm_avail`, on a 1 ms period. About 15 ms from write to audio is then the least this card allows, and it is steady to a millisecond.
 - **A wide OFDM modem must follow the sample clock inside each burst.** One that assumes a fixed rate, or measures it from a handful of pilots, loses bursts at random as the clocks hunt: pdn-soundmodem 0.108.0 lost about a third of its `ofdm-fm` bursts that way on this bench, and decoded nothing at all between boards without MIC PLL Adjust. A receiver that measures each symbol's timing from all of its carriers and resamples loses none to the clock, with the bit set or clear ([pdn-soundmodem #811](https://github.com/packet-net/pdn-soundmodem/pull/811) has the measurements).
 - **Weight carriers by the noise they show, not by channel gain.** The top of an 8 kHz span is 13 dB worse than the bottom and one receiver here has a tone on two or three carriers; gain alone says neither.
 - **Deviation is worth having.** R11 = 2k0 gave 3.2 dB more than the board as built, and on the densest `ofdm-fm` preset that doubled the frames delivered at the margin (66 of 80 against 34 of 80 on 0.108.0).
@@ -440,7 +474,7 @@ What the measurements above mean for a modem on this combination. Results for pa
 - **Whether the receive tone is there through a different audio interface**: an external sound card on the rear connector, with and without the internal board fitted, and at the speaker ([#1](https://github.com/M0LTE/tait-cm108-bench/issues/1)).
 - **Whether the receive tone can be moved out of the band**, for instance by more pull on the system clock than the birdie killer gives. Nothing in the documents suggests a way.
 - **What sets the free-running capture clock's rate.** It held within 100 ppm through a night and differed by 1400 ppm between two weeks on the same boards.
-- **Why the playback clock swings by hundreds of microseconds** on the first playback after the card has had no stream at all. Any stream left running prevents it (see [Sample clock](#cm108b-sample-clock)); what happens inside the card is not known, nor how long it must be idle or how much playback must come first.
+- **What happens inside the card when it has no stream open**, how long it must be idle and how much playback must come first before its next playback starts slow. Any stream left open prevents it (see [Sample clock](#cm108b-sample-clock)).
 - **12 dB SINAD sensitivity**, and with it how every figure here changes on a weak signal. It needs the RF level stepped with pads.
 - Clock offsets between other computers.
 - The receive response and signal quality on Narrow, and the burst deviation after R11 = 2k0, have not been measured directly.
